@@ -84,8 +84,10 @@ mydealz/
 - Branch naming: `feature/`, `fix/`, `chore/`, `agent/`
 - Commit style: `feat(web): add deal card component` — conventional commits
 - PRs require passing CI (lint + typecheck + tests) before merge
-- Never commit directly to `main`
-- Squash merge only — keep main history clean
+- Feature branches are created from `develop` and merged back to `develop` via PR
+- `develop` branch is merged to `main` via PR for releases
+- Never commit directly to `main` or `develop`
+- Squash merge only — keep history clean
 
 ## What NOT to do
 - Do not add new npm packages without checking if the functionality already exists in the stack
