@@ -1,0 +1,32 @@
+{
+  "name": "@mydealz/extension",
+  "version": "0.1.0",
+  "description": "MyDealz browser extension",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "plasmo": "0.88.0",
+    "@plasmohq/storage": "^1.9.0",
+    "@mydealz/api": "workspace:*",
+    "@mydealz/db": "workspace:*",
+    "@mydealz/ui": "workspace:*",
+    "@mydealz/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "manifest": {
+    "host_permissions": [
+      "https://*/*"
+    ],
+    "permissions": [
+      "storage",
+      "activeTab"
+    ]
+  }
+}
