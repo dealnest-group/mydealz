@@ -103,3 +103,6 @@ mydealz/
 
 ## When you are unsure
 Ask before implementing. A 2-minute question saves 2 hours of rework. If a decision conflicts with this file, flag it — do not silently deviate.
+
+## Business Context
+See `AI_CONTEXT.md` for product strategy, roadmap, and sprint plan.
