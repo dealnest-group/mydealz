@@ -61,7 +61,7 @@ async function getDeals(category?: string, search?: string): Promise<DealRow[]> 
     console.error('Deals fetch error:', error.message)
     return []
   }
-  return (data ?? []) as DealRow[]
+  return (data ?? []) as unknown as DealRow[]
 }
 
 function toHeroDeal(d: DealRow): HeroDeal {

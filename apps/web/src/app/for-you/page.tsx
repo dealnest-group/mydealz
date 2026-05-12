@@ -46,7 +46,7 @@ async function getPersonalisedDeals(userId: string): Promise<{
         .select('id, title, price_current, price_was, discount_pct, authenticity_score, image_url, affiliate_url, category, retailers(name)')
         .in('id', ids).eq('status', 'approved')
       const ratingsMap = await getRatings((data ?? []).map((d) => d.id), supabase)
-      return { deals: (data ?? []) as DealRow[], profile, ratings: ratingsMap }
+      return { deals: (data ?? []) as unknown as DealRow[], profile, ratings: ratingsMap }
     }
   }
 
@@ -57,7 +57,7 @@ async function getPersonalisedDeals(userId: string): Promise<{
       .from('deals')
       .select('id, title, price_current, price_was, discount_pct, authenticity_score, image_url, affiliate_url, category, retailers(name)')
       .eq('status', 'approved').in('category', topCats).order('authenticity_score', { ascending: false }).limit(24)
-    dealsData = (data ?? []) as DealRow[]
+    dealsData = (data ?? []) as unknown as DealRow[]
   }
   if (dealsData.length < 8) {
     const existingIds = new Set(dealsData.map((d) => d.id))
@@ -65,7 +65,7 @@ async function getPersonalisedDeals(userId: string): Promise<{
       .from('deals')
       .select('id, title, price_current, price_was, discount_pct, authenticity_score, image_url, affiliate_url, category, retailers(name)')
       .eq('status', 'approved').order('authenticity_score', { ascending: false }).limit(24)
-    for (const d of (topDeals ?? []) as DealRow[]) {
+    for (const d of (topDeals ?? []) as unknown as DealRow[]) {
       if (!existingIds.has(d.id)) dealsData.push(d)
       if (dealsData.length >= 24) break
     }

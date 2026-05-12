@@ -39,7 +39,7 @@ async function getDeal(id: string) {
   const { data } = await supabase
     .from('deals').select('*, retailers(name, slug, base_url)')
     .eq('id', id).eq('status', 'approved').single()
-  return data as DealDetail | null
+  return data as unknown as DealDetail | null
 }
 
 async function getRatingStats(dealId: string, userId: string | null) {
