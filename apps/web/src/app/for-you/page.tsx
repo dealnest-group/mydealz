@@ -77,13 +77,14 @@ async function getPersonalisedDeals(userId: string): Promise<{
 async function getRatings(ids: string[], supabase: ReturnType<typeof createClient>) {
   if (!ids.length) return new Map<string, { avg: number; count: number }>()
   const { data } = await supabase.from('deal_ratings').select('deal_id, score').in('deal_id', ids)
+  const rows = (data ?? []) as { deal_id: string; score: number }[]
   const map = new Map<string, { sum: number; count: number }>()
-  for (const r of data ?? []) {
+  for (const r of rows) {
     const prev = map.get(r.deal_id) ?? { sum: 0, count: 0 }
     map.set(r.deal_id, { sum: prev.sum + r.score, count: prev.count + 1 })
   }
   const result = new Map<string, { avg: number; count: number }>()
-  for (const [id, { sum, count }] of map) result.set(id, { avg: sum / count, count })
+  map.forEach(({ sum, count }, id) => result.set(id, { avg: sum / count, count }))
   return result
 }
 
