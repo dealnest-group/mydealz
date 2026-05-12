@@ -59,18 +59,16 @@ export function Header({ user, searchDefault }: HeaderProps) {
             </a>
 
             {user ? (
-              <div className="flex items-center gap-2 ml-2">
-                <span className="text-xs text-gray-500 max-w-[120px] truncate hidden lg:block">
-                  {user.email}
-                </span>
-                <form action="/auth/signout" method="POST">
-                  <button
-                    type="submit"
-                    className="text-sm font-semibold text-gray-600 hover:text-red-500 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
-                  >
-                    Sign out
-                  </button>
-                </form>
+              <div className="flex items-center gap-1 ml-2">
+                <a
+                  href="/profile"
+                  className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-brand-500 px-3 py-2 rounded-lg hover:bg-brand-50 transition-colors"
+                >
+                  <span className="w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center text-[10px] font-black text-white shrink-0">
+                    {(user.email ?? 'U')[0].toUpperCase()}
+                  </span>
+                  <span className="hidden lg:block max-w-[100px] truncate">{user.email?.split('@')[0]}</span>
+                </a>
               </div>
             ) : (
               <a
@@ -82,16 +80,14 @@ export function Header({ user, searchDefault }: HeaderProps) {
             )}
           </nav>
 
-          {/* Mobile: auth icon */}
-          <div className="md:hidden shrink-0 flex items-center gap-1">
+          {/* Mobile: profile/auth icon */}
+          <div className="md:hidden shrink-0">
             {user ? (
-              <form action="/auth/signout" method="POST">
-                <button className="p-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors text-xs font-semibold">
-                  Out
-                </button>
-              </form>
+              <a href="/profile" className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-[11px] font-black text-white">
+                {(user.email ?? 'U')[0].toUpperCase()}
+              </a>
             ) : (
-              <a href="/auth" className="p-2 text-brand-500 font-bold text-sm rounded-lg hover:bg-brand-50">
+              <a href="/auth" className="text-brand-500 font-bold text-sm px-3 py-2 rounded-lg hover:bg-brand-50">
                 Sign in
               </a>
             )}

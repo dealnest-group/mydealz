@@ -25,16 +25,21 @@ export function Hero({ dealCount = 0 }: { dealCount?: number }) {
         </div>
 
         {/* Headline */}
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight mb-6">
-          The UK&apos;s Smartest
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight mb-4">
+          Your Personal
           <span className="block mt-1 text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-orange-300 to-amber-300">
-            Deals Engine
+            AI Savings Companion
           </span>
         </h1>
 
+        {/* Slogan */}
+        <p className="text-brand-400 text-sm font-bold tracking-widest uppercase mb-6">
+          Save Smarter. Every Time.
+        </p>
+
         <p className="text-gray-400 text-lg sm:text-xl max-w-xl mx-auto mb-10 leading-relaxed">
-          Every deal AI-verified for authenticity. No fake discounts.
-          Just real savings from top UK retailers.
+          AI-verified deals from top UK retailers. Rate deals, save money,
+          and MyDealz learns exactly what you love.
         </p>
 
         {/* Search */}

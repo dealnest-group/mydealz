@@ -11,8 +11,8 @@ const font = Plus_Jakarta_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'MyDealz — AI-Verified UK Deals',
-  description: 'AI-curated deals from top UK retailers. Every discount verified for authenticity.',
+  title: 'MyDealz — Your Personal AI Savings Companion',
+  description: 'Save Smarter. Every Time. AI-verified deals from top UK retailers, personalised to what you love.',
 }
 
 export default async function RootLayout({
