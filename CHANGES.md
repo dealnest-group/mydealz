@@ -2,7 +2,7 @@
 
 > Read this at the start of every session for a quick brief. Update it at the end of every session.
 
-_Last updated: 2026-05-12 (end of day)_
+_Last updated: 2026-05-13 (end of day)_
 
 ---
 
@@ -12,12 +12,10 @@ _Last updated: 2026-05-12 (end of day)_
 UK deals aggregator with AI deal verification (Groq LLM), pgvector personalisation, and social features.
 
 **Where to run it:**
-```powershell
-# Set Node PATH first (required on this machine)
-$env:PATH = "C:\Users\Imran Janwari\AppData\Roaming\npm;C:\Program Files\nodejs;" + $env:PATH
-
-# Web app
-cd apps/web && pnpm dev         # runs on localhost:3001 (3000 often occupied)
+```bash
+# Web app (macOS — pnpm not globally installed, use npx)
+npx pnpm@8.15.0 --filter web dev    # localhost:3000
+# env vars must be in apps/web/.env.local (copy from root .env.local)
 
 # Agents
 cd packages/agents
@@ -28,7 +26,7 @@ py personalisation_agent.py     # build user preference profiles
 ```
 
 **DB:** Supabase — `zadlakzrhyexeluvauun.supabase.co`
-**Branch:** `base-setup` → push to `origin/base-setup`
+**Branch:** `ui-redesign` (active) — `base-setup` is the previous stable branch
 
 ---
 
@@ -70,6 +68,69 @@ py personalisation_agent.py     # build user preference profiles
 - DealImage client component (handles onError without SSR issue)
 - Batch ratings query in page.tsx (2 queries total, not N+1)
 - Star ratings on DealCard (avgRating + ratingCount props)
+
+### Session 6 (DealNest brand system + UI redesign + Vercel deploy) — 2026-05-13
+
+#### Branch: `ui-redesign`
+
+#### Design tokens
+- Design handoff copied to `docs/design/design_handoff_dealnest_brand/`
+- `packages/ui/src/tokens/colors.ts` — full group colour palette (ink, cream, chalk, mist, sage, rust, amber, mydealz, rewardloop, basketbot)
+- `packages/ui/src/tokens/typography.ts` — Bricolage Grotesque / Geist / Geist Mono type scale
+- Tokens re-exported from `packages/ui/src/index.ts`
+
+#### Fonts
+- `Bricolage_Grotesque` via `next/font/google` → `--font-display` CSS var
+- `GeistSans` + `GeistMono` via `geist` npm package (canonical Next.js 14 approach) → `--font-geist-sans` / `--font-geist-mono`
+- Replaced `Plus_Jakarta_Sans` throughout
+
+#### Tailwind
+- `tailwind.config.ts` extended with full brand palette (`ink`, `ink-80`, `ink-60`, `ink-40`, `cream`, `chalk`, `mist`, `mydealz`, `mydealz-deep`, `mydealz-soft`, `sage`, `rust`, `amber`)
+- New font family config: `font-sans` → Geist, `font-display` → Bricolage, `font-mono` → Geist Mono
+- Brand shadows: `shadow-card` (1px + 8px), `shadow-card-float` (floating hero cards)
+- Legacy `brand` orange kept so nothing breaks
+
+#### Logos + favicon
+- 9 production SVGs → `apps/web/public/logos/` (all DealNest group marks + icons)
+- `apps/web/src/app/icon.svg` → Next.js auto-favicon (picked up as `/icon.svg`)
+- `metadata.icons` set in `layout.tsx`
+
+#### Component redesigns (packages/ui)
+- **Header**: ink background, MyDealz SVG icon + Bricolage wordmark, cream nav links, Sign in (outline) + Get the app (filled green)
+- **Hero**: two-column dark layout — left copy/stats, right stacked deal card deck
+  - Three cards: front (full DealCard), left (MiniCard rotated −4°, 0.55 opacity), right (MiniCard rotated +5°, 0.55 opacity)
+  - Background MiniCards are clickable — clicking animates them to front via CSS transitions (`cubic-bezier(0.4,0,0.2,1)`)
+  - Falls back to 3 sample deals if Supabase returns none
+- **DealCard**: full redesign — 16:10 image, ink discount pill, frosted retailer pill, amber bookmark toggle, Bricolage price, savings chip (`mydealz-soft`), verifier avatar row, vote pill with up/down arrows
+  - New optional props: `verificationNote`, `verifierName`, `verifierInitials`, `verifiedAt`, `voteCount`
+- **DealSlider**: chalk bg, mist borders, ink pills, mydealz savings chip, brand "Get this deal →"
+- **CategoryFilter**: chalk bg, ink active pill, mist borders, mydealz "Deals for you" pill
+
+#### Page redesigns (apps/web)
+- **page.tsx**: cream bg, brand section headings (Bricolage), ink footer, passes `featuredDeals` to Hero
+- **auth/page.tsx**: cream bg, MyDealz logo lockup, mist tabs, mydealz submit button, rust/soft error/success states
+- **deals/[id]/page.tsx**: cream bg, mist breadcrumb, ink/mist badges, Bricolage price, sage/rust score bar, mydealz CTA
+- **for-you/page.tsx**: ink hero banner, mydealz eyebrow + heading, soft interest tags, brand onboarding card
+- **profile/page.tsx**: chalk header, ink/display headings, mydealz avatar palette, activity cards hover to `border-mydealz/30`
+- **profile/ProfileSettings.tsx**: mydealz-soft icon wells, mist borders, rust sign-out, brand form buttons
+- **deals/[id]/DealComments.tsx**: chalk comment bubbles, mydealz-soft reactions, brand post buttons
+- **deals/[id]/DealRating.tsx**: mist borders, ink type, `text-mydealz` sign-in link
+- **deals/[id]/DealImage.tsx**: mist fallback bg, ink-40 category icon
+- **loading.tsx**: cream bg, mist borders, 16:10 skeleton aspect ratio
+
+#### Vercel deploy fixes
+- `turbo.json`: renamed `tasks` → `pipeline` (turbo v1 syntax — project is on `^1.13.0`)
+- `vercel.json`: added with pnpm install/build commands + `apps/web/.next` output dir
+- `tsconfig.json`: bumped `target` from `es5` → `ES2017` (fixes Map/iterator `for...of` TS errors on Vercel)
+- Fixed `for (const [, comment] of commentMap)` → `commentMap.forEach()` (Map iteration)
+- Fixed explicit `(d: DealRow)` cast clashing with Supabase's inferred `retailers` array type
+
+#### Vercel deploy status
+- Build passing type-check and compile ✓
+- Last fix pushed: `3b27f82` — Supabase `retailers` type cast in `for-you/page.tsx`
+- If further type errors appear tomorrow, same pattern: remove explicit `DealRow` cast or use `as DealRow[]`
+
+---
 
 ### Session 5 (personalisation + brand + profile)
 
@@ -136,7 +197,9 @@ py personalisation_agent.py     # build user preference profiles
 | Vector RPC | match_deals_for_user() installed and ready |
 | /for-you | Live — using category fallback (will auto-upgrade to vector once user embedding built) |
 | Agents | All 6 agents working. fastembed replaces HF API for embeddings |
-| Web app | All pages: /, /deals/[id], /auth, /profile, /for-you |
+| Web app | All pages fully redesigned: /, /deals/[id], /auth, /profile, /for-you |
+| Brand system | DealNest tokens, fonts, logos, favicon — all wired in |
+| Vercel | Deploying from `ui-redesign` branch. Last known build: type-check passing, may have one more Supabase type cast error |
 | AWIN | Key configured. Waiting for advertiser programme approvals |
 | eBay API | Developer account applied. Pending approval |
 | GH Actions | Workflow files in infra/.github/ — NOT yet in root .github/ (GH won't pick them up) |
@@ -144,6 +207,11 @@ py personalisation_agent.py     # build user preference profiles
 ---
 
 ## Tomorrow — Start Here
+
+### Priority 0: Vercel build (check first thing)
+Check if the `ui-redesign` branch deployed successfully on Vercel.
+- If it failed with another type error: same fix pattern — remove explicit `DealRow` cast or replace `for...of` on Maps with `.forEach()`
+- If green: merge `ui-redesign` → `main` via squash merge, Vercel will promote to production
 
 ### Priority 1: Complete the vector personalisation loop (30 min)
 
