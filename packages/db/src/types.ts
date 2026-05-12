@@ -1,3 +1,5 @@
+type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
+
 export type Database = {
   public: {
     Tables: {
@@ -176,7 +178,7 @@ export type Database = {
           items_processed: number
           errors: number
           duration_ms: number | null
-          metadata: any | null
+          metadata: Json | null
           created_at: string
         }
         Insert: {
