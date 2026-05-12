@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { CategoryIcon } from './CategoryIcon'
+import { StarRow } from './StarIcon'
 
 export type DealCardProps = {
   id: string
@@ -15,16 +16,17 @@ export type DealCardProps = {
   category: string | null
   retailerName: string | null
   isNew?: boolean
+  avgRating?: number
+  ratingCount?: number
 }
-
 
 function ScorePill({ score }: { score: number }) {
   const { bg, text, label } =
     score >= 80
       ? { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Verified' }
       : score >= 50
-      ? { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Plausible' }
-      : { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Unverified' }
+      ? { bg: 'bg-amber-50',   text: 'text-amber-700',   label: 'Plausible' }
+      : { bg: 'bg-gray-100',   text: 'text-gray-500',    label: 'Unverified' }
 
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${bg} ${text}`}>
@@ -44,48 +46,45 @@ export function DealCard({
   discountPct,
   authenticityScore,
   imageUrl,
-  affiliateUrl,
   category,
   retailerName,
   isNew = false,
+  avgRating,
+  ratingCount,
 }: DealCardProps) {
-  const [imgFailed, setImgFailed] = useState(!imageUrl)
-  const saving =
-    priceWas && priceWas > priceCurrent
-      ? (priceWas - priceCurrent).toFixed(2)
-      : null
+  const [imgFailed, setImgFailed] = useState(false)
+  const saving = priceWas && priceWas > priceCurrent
+    ? (priceWas - priceCurrent).toFixed(2)
+    : null
   const pct = discountPct ? Math.round(discountPct) : null
   const detailUrl = `/deals/${id}`
+  const showImage = !!imageUrl && !imgFailed
 
   return (
     <article className="group relative bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col">
 
-      {/* Image — links to detail page */}
-      <a href={detailUrl} className="relative aspect-[4/3] bg-gray-50 overflow-hidden shrink-0 block">
-        {imageUrl && !imgFailed ? (
+      <a href={detailUrl} className="block relative aspect-[4/3] overflow-hidden shrink-0">
+        {showImage ? (
           <img
-            src={imageUrl}
+            src={imageUrl!}
             alt={title}
             referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={() => setImgFailed(true)}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-brand-50 to-orange-100 gap-2">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-brand-50 to-orange-100 gap-2">
             <CategoryIcon category={category} className="w-14 h-14 text-brand-400" />
             {category && (
-              <span className="text-xs font-semibold text-brand-400 uppercase tracking-wide">
+              <span className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">
                 {category}
               </span>
             )}
           </div>
         )}
 
-        {/* Gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Badges */}
         <div className="absolute top-3 left-3 flex gap-1.5">
           {pct && pct > 0 && (
             <span className="bg-brand-500 text-white text-xs font-black px-2.5 py-1 rounded-full shadow">
@@ -100,7 +99,6 @@ export function DealCard({
         </div>
       </a>
 
-      {/* Content */}
       <div className="flex flex-col flex-1 p-4 gap-2.5">
         {retailerName && (
           <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
@@ -108,14 +106,12 @@ export function DealCard({
           </p>
         )}
 
-        {/* Title → detail page */}
         <a href={detailUrl} className="flex-1">
           <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem] hover:text-brand-500 transition-colors">
             {title}
           </h3>
         </a>
 
-        {/* Price */}
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-2xl font-black text-gray-900 leading-none">
             £{priceCurrent.toFixed(2)}
@@ -132,10 +128,16 @@ export function DealCard({
           )}
         </div>
 
-        {/* AI score */}
+        {avgRating && avgRating > 0 && ratingCount && ratingCount > 0 && (
+          <div className="flex items-center gap-1.5">
+            <StarRow avg={avgRating} />
+            <span className="text-xs font-semibold text-gray-600">{avgRating.toFixed(1)}</span>
+            <span className="text-xs text-gray-400">({ratingCount})</span>
+          </div>
+        )}
+
         {authenticityScore > 0 && <ScorePill score={authenticityScore} />}
 
-        {/* CTA → detail page */}
         <a
           href={detailUrl}
           className="mt-1 flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white text-sm font-bold py-3 px-4 rounded-xl transition-colors duration-150 group/btn"

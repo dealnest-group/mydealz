@@ -15,6 +15,29 @@ type DealRow = {
   category: string | null
   created_at: string
   retailers: { name: string; slug: string } | null
+  avgRating?: number
+  ratingCount?: number
+}
+
+type RatingStat = { avg: number; count: number }
+
+async function getRatingStats(dealIds: string[]): Promise<Map<string, RatingStat>> {
+  if (!dealIds.length) return new Map()
+  const { data } = await supabase
+    .from('deal_ratings')
+    .select('deal_id, score')
+    .in('deal_id', dealIds)
+
+  const map = new Map<string, { sum: number; count: number }>()
+  for (const r of data ?? []) {
+    const prev = map.get(r.deal_id) ?? { sum: 0, count: 0 }
+    map.set(r.deal_id, { sum: prev.sum + r.score, count: prev.count + 1 })
+  }
+  const result = new Map<string, RatingStat>()
+  for (const [id, { sum, count }] of map) {
+    result.set(id, { avg: sum / count, count })
+  }
+  return result
 }
 
 async function getDeals(category?: string, search?: string): Promise<DealRow[]> {
@@ -70,12 +93,18 @@ export default async function HomePage({
   const search   = searchParams.search   ?? null
   const deals = await getDeals(category ?? undefined, search ?? undefined)
 
-  // Split into sections for home feed
-  const hotDeals    = deals.filter((d) => d.authenticity_score >= 90).slice(0, 8)
-  const freshDeals  = [...deals].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  ).slice(0, 8)
-  const allDeals    = deals
+  // Fetch all ratings in one batch query (2 queries total, not N+1)
+  const ratingMap = await getRatingStats(deals.map((d) => d.id))
+  const enriched = deals.map((d) => {
+    const r = ratingMap.get(d.id)
+    return r ? { ...d, avgRating: r.avg, ratingCount: r.count } : d
+  })
+
+  const hotDeals   = enriched.filter((d) => d.authenticity_score >= 90).slice(0, 8)
+  const freshDeals = [...enriched]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 8)
+  const allDeals   = enriched
 
   const isFiltered = !!(category || search)
 
@@ -216,6 +245,8 @@ function DealGrid({
           category={deal.category}
           retailerName={deal.retailers?.name ?? null}
           isNew={isNew}
+          avgRating={deal.avgRating}
+          ratingCount={deal.ratingCount}
         />
       ))}
     </div>

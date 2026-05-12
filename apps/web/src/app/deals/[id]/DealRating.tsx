@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { StarIcon, StarRow } from '@mydealz/ui'
 
 type Props = {
   dealId: string
@@ -9,31 +10,6 @@ type Props = {
   totalRatings: number
   userScore: number | null
   userId: string | null
-}
-
-function StarIcon({ filled, half = false }: { filled: boolean; half?: boolean }) {
-  return (
-    <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-      {half ? (
-        <>
-          <defs>
-            <linearGradient id="half">
-              <stop offset="50%" stopColor="currentColor" />
-              <stop offset="50%" stopColor="transparent" />
-            </linearGradient>
-          </defs>
-          <path fill="url(#half)" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </>
-      ) : (
-        <path
-          fill={filled ? 'currentColor' : 'none'}
-          stroke="currentColor"
-          strokeWidth={filled ? 0 : 1.5}
-          d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-        />
-      )}
-    </svg>
-  )
 }
 
 export function DealRating({ dealId, avgScore, totalRatings, userScore, userId }: Props) {
@@ -67,9 +43,6 @@ export function DealRating({ dealId, avgScore, totalRatings, userScore, userId }
     setSubmitting(false)
   }
 
-  const displayStars = hovered || current || avg
-  const roundedAvg = Math.round(avg * 2) / 2
-
   return (
     <div className="bg-white rounded-2xl shadow-card p-5 space-y-4">
       <div className="flex items-center justify-between">
@@ -77,14 +50,11 @@ export function DealRating({ dealId, avgScore, totalRatings, userScore, userId }
         <span className="text-xs text-gray-400">{total} {total === 1 ? 'rating' : 'ratings'}</span>
       </div>
 
-      {/* Average display */}
       <div className="flex items-center gap-3">
         <span className="text-4xl font-black text-gray-900">{avg > 0 ? avg.toFixed(1) : '—'}</span>
         <div>
-          <div className="flex text-amber-400">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <StarIcon key={s} filled={s <= Math.floor(roundedAvg)} />
-            ))}
+          <div className="text-amber-400">
+            <StarRow avg={avg} size="md" />
           </div>
           <p className="text-xs text-gray-400 mt-0.5">out of 5</p>
         </div>
