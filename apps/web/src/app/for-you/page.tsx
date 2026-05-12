@@ -45,7 +45,7 @@ async function getPersonalisedDeals(userId: string): Promise<{
         .from('deals')
         .select('id, title, price_current, price_was, discount_pct, authenticity_score, image_url, affiliate_url, category, retailers(name)')
         .in('id', ids).eq('status', 'approved')
-      const ratingsMap = await getRatings((data ?? []).map((d: DealRow) => d.id), supabase)
+      const ratingsMap = await getRatings((data ?? []).map((d) => d.id), supabase)
       return { deals: (data ?? []) as DealRow[], profile, ratings: ratingsMap }
     }
   }
