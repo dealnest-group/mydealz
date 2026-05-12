@@ -71,13 +71,13 @@ async function getComments(dealId: string, userId: string | null): Promise<Comme
     commentMap.set(c.id, { ...c, user_email: `user-${c.user_id.slice(0, 8)}@mydealz`, reactions: reactionSummary, replies: [] })
   }
   const roots: CommentRow[] = []
-  for (const comment of commentMap.values()) {
+  commentMap.forEach((comment) => {
     if (comment.parent_id && commentMap.has(comment.parent_id)) {
       commentMap.get(comment.parent_id)!.replies.push(comment)
     } else {
       roots.push(comment)
     }
-  }
+  })
   return roots
 }
 
