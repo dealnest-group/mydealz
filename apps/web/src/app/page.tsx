@@ -1,6 +1,6 @@
 import { supabase } from '@mydealz/db'
 import { Hero, DealCard, CategoryFilter, DealSlider } from '@mydealz/ui'
-import type { SliderDeal } from '@mydealz/ui'
+import type { SliderDeal, HeroDeal } from '@mydealz/ui'
 
 type DealRow = {
   id: string
@@ -64,22 +64,32 @@ async function getDeals(category?: string, search?: string): Promise<DealRow[]> 
   return (data ?? []) as DealRow[]
 }
 
-function SectionHeading({
-  title,
-  subtitle,
-  emoji,
-}: {
-  title: string
-  subtitle?: string
-  emoji: string
-}) {
+function toHeroDeal(d: DealRow): HeroDeal {
+  return {
+    id: d.id,
+    title: d.title,
+    priceCurrent: d.price_current,
+    priceWas: d.price_was,
+    discountPct: d.discount_pct,
+    authenticityScore: d.authenticity_score,
+    imageUrl: d.image_url,
+    affiliateUrl: d.affiliate_url,
+    category: d.category,
+    retailerName: d.retailers?.name ?? null,
+    voteCount: 0,
+  }
+}
+
+function SectionHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="flex items-end gap-3 mb-6">
-      <span className="text-2xl">{emoji}</span>
-      <div>
-        <h2 className="text-xl font-black text-gray-900">{title}</h2>
-        {subtitle && <p className="text-sm text-gray-400 mt-0.5">{subtitle}</p>}
-      </div>
+    <div className="mb-6">
+      <h2
+        className="font-display font-bold text-ink"
+        style={{ fontSize: 22, letterSpacing: '-0.015em' }}
+      >
+        {title}
+      </h2>
+      {subtitle && <p className="text-sm text-ink-60 mt-0.5">{subtitle}</p>}
     </div>
   )
 }
@@ -93,7 +103,6 @@ export default async function HomePage({
   const search   = searchParams.search   ?? null
   const deals = await getDeals(category ?? undefined, search ?? undefined)
 
-  // Fetch all ratings in one batch query (2 queries total, not N+1)
   const ratingMap = await getRatingStats(deals.map((d) => d.id))
   const enriched = deals.map((d) => {
     const r = ratingMap.get(d.id)
@@ -108,32 +117,32 @@ export default async function HomePage({
 
   const isFiltered = !!(category || search)
 
+  const featuredDeals = hotDeals.slice(0, 3).map(toHeroDeal)
+
   return (
-    <main className="min-h-screen">
-      {/* Hero — only on unfiltered home */}
+    <main className="min-h-screen bg-cream">
+      {/* Hero */}
       {!isFiltered && (
         <>
-          <Hero dealCount={deals.length} />
-          <div className="bg-[#fafaf8] border-b border-gray-100">
-            <DealSlider
-              title="Top Deals Right Now"
-              deals={deals
-                .filter((d) => d.authenticity_score >= 75)
-                .slice(0, 10)
-                .map((d): SliderDeal => ({
-                  id: d.id,
-                  title: d.title,
-                  priceCurrent: d.price_current,
-                  priceWas: d.price_was,
-                  discountPct: d.discount_pct,
-                  imageUrl: d.image_url,
-                  affiliateUrl: d.affiliate_url,
-                  retailerName: d.retailers?.name ?? null,
-                  authenticityScore: d.authenticity_score,
-                  category: d.category,
-                }))}
-            />
-          </div>
+          <Hero dealCount={deals.length} featuredDeals={featuredDeals} />
+          <DealSlider
+            title="Top Deals Right Now"
+            deals={deals
+              .filter((d) => d.authenticity_score >= 75)
+              .slice(0, 10)
+              .map((d): SliderDeal => ({
+                id: d.id,
+                title: d.title,
+                priceCurrent: d.price_current,
+                priceWas: d.price_was,
+                discountPct: d.discount_pct,
+                imageUrl: d.image_url,
+                affiliateUrl: d.affiliate_url,
+                retailerName: d.retailers?.name ?? null,
+                authenticityScore: d.authenticity_score,
+                category: d.category,
+              }))}
+          />
         </>
       )}
 
@@ -144,31 +153,27 @@ export default async function HomePage({
 
         {deals.length === 0 ? (
           <div className="text-center py-24">
-            <p className="text-5xl mb-4">🔍</p>
-            <p className="text-gray-500 text-lg font-medium">No deals found for this category.</p>
-            <a href="/" className="mt-4 inline-block text-sm font-semibold text-brand-500 hover:underline">
+            <p className="font-display font-bold text-ink-40" style={{ fontSize: 48 }}>—</p>
+            <p className="text-ink-60 text-lg font-medium mt-4">No deals found for this category.</p>
+            <a href="/" className="mt-4 inline-block text-sm font-semibold text-mydealz hover:underline">
               View all deals
             </a>
           </div>
         ) : isFiltered ? (
-          /* Filtered view — simple grid */
           <section>
             <SectionHeading
-              emoji="🏷️"
               title={search ? `Results for "${search}"` : `${category} Deals`}
               subtitle={`${deals.length} verified deals`}
             />
             <DealGrid deals={deals} />
           </section>
         ) : (
-          /* Home feed — sections */
           <>
             {hotDeals.length > 0 && (
               <section>
                 <SectionHeading
-                  emoji="🔥"
                   title="Hot Right Now"
-                  subtitle="Highest AI authenticity scores"
+                  subtitle="Highest authenticity scores today"
                 />
                 <DealGrid deals={hotDeals} />
               </section>
@@ -177,7 +182,6 @@ export default async function HomePage({
             {freshDeals.length > 0 && (
               <section>
                 <SectionHeading
-                  emoji="⚡"
                   title="Just Added"
                   subtitle="Fresh deals in the last hour"
                 />
@@ -187,9 +191,8 @@ export default async function HomePage({
 
             <section>
               <SectionHeading
-                emoji="✦"
                 title="All Deals"
-                subtitle={`${allDeals.length} AI-verified deals`}
+                subtitle={`${allDeals.length} verified deals`}
               />
               <DealGrid deals={allDeals} />
             </section>
@@ -198,23 +201,35 @@ export default async function HomePage({
       </div>
 
       {/* Footer */}
-      <footer className="mt-10 bg-gray-950 text-gray-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+      <footer className="mt-10 bg-ink">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-8">
             <div>
-              <p className="text-xl font-black text-white">
-                my<span className="text-brand-500">dealz</span>
+              <div className="flex items-center gap-3 mb-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logos/mydealz-icon.svg" alt="" width={28} height={28} />
+                <span
+                  className="font-display font-bold text-cream"
+                  style={{ fontSize: 20, letterSpacing: '-0.02em' }}
+                >
+                  MyDealz
+                </span>
+              </div>
+              <p className="text-sm" style={{ color: 'rgba(246,241,231,0.55)' }}>
+                AI-curated UK deals · Updated every 30 minutes
               </p>
-              <p className="text-sm mt-1">AI-curated UK deals · Updated every 30 minutes</p>
             </div>
-            <div className="flex gap-6 text-sm">
-              <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
-              <a href="/terms"   className="hover:text-white transition-colors">Terms</a>
-              <a href="/about"   className="hover:text-white transition-colors">About</a>
+            <div className="flex gap-8 text-sm" style={{ color: 'rgba(246,241,231,0.55)' }}>
+              <a href="/privacy" className="hover:text-cream transition-colors">Privacy</a>
+              <a href="/terms"   className="hover:text-cream transition-colors">Terms</a>
+              <a href="/about"   className="hover:text-cream transition-colors">About</a>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-xs text-center text-gray-600">
-            © 2026 MyDealz. Deals verified by AI · Affiliate links may earn commission.
+          <div
+            className="mt-8 pt-8 text-xs text-center"
+            style={{ borderTop: '1px solid rgba(246,241,231,0.08)', color: 'rgba(246,241,231,0.3)' }}
+          >
+            © 2026 MyDealz · Part of DealNest Group · Affiliate links may earn commission.
           </div>
         </div>
       </footer>
@@ -222,13 +237,7 @@ export default async function HomePage({
   )
 }
 
-function DealGrid({
-  deals,
-  isNew = false,
-}: {
-  deals: DealRow[]
-  isNew?: boolean
-}) {
+function DealGrid({ deals, isNew = false }: { deals: DealRow[]; isNew?: boolean }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
       {deals.map((deal) => (
@@ -247,6 +256,7 @@ function DealGrid({
           isNew={isNew}
           avgRating={deal.avgRating}
           ratingCount={deal.ratingCount}
+          voteCount={0}
         />
       ))}
     </div>

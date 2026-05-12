@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <title>DealNest Group · Brand System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #f0eee9; font-family: "Geist", system-ui, sans-serif; color: #0E1B2C; }
+    #root { width: 100vw; height: 100vh; }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="brand-logos.jsx"></script>
+  <script type="text/babel" src="brand-blocks.jsx"></script>
+  <script type="text/babel" src="brand-identity.jsx"></script>
+  <script type="text/babel" src="brand-ui.jsx"></script>
+
+  <script type="text/babel" data-presets="env,react">
+    const { DesignCanvas, DCSection, DCArtboard, DCPostIt } = window;
+
+    function App() {
+      return (
+        <DesignCanvas>
+          <DCSection
+            id="group"
+            title="DealNest Group · Parent identity"
+            subtitle="The holding company. Investor-facing, calm, used as the foundation each product extends.">
+            <DCArtboard id="hero" label="Hero lockup" width={1100} height={760}>
+              <DealNestHeroBoard />
+            </DCArtboard>
+            <DCArtboard id="variants" label="Variants & sizes" width={1100} height={760}>
+              <DealNestVariants />
+            </DCArtboard>
+            <DCPostIt top={40} right={20} width={220} rotate={-3}>
+              The cradle is the family primitive. Every product keeps the same U-curve and swaps what's nested inside. Recognisable at 16px.
+            </DCPostIt>
+          </DCSection>
+
+          <DCSection
+            id="products"
+            title="Product brands"
+            subtitle="MyDealz, RewardLoop, BasketBot. Each owns one signature colour; everything else stays group-standard.">
+            <DCArtboard id="mydealz" label="MyDealz · Phase 1" width={820} height={680}>
+              <ProductBrandCard
+                name="MyDealz"
+                sub="Phase 1 · mydealz.uk"
+                Mark={MyDealzMark}
+                signature="#0EA968"
+                soft="#D8F1E4"
+                blurb="The most consumer-facing of the three. A price tag, nested. Friendly, specific, sounds like a mate." />
+            </DCArtboard>
+            <DCArtboard id="rewardloop" label="RewardLoop · Phase 2" width={820} height={680}>
+              <ProductBrandCard
+                name="RewardLoop"
+                sub="Phase 2 · rewardloop.uk"
+                Mark={RewardLoopMark}
+                signature="#FF6B5B"
+                soft="#FFE2DC"
+                blurb="Cashback + referrals. The ribbon loops back on itself — value returning to you. Warmer than MyDealz, still consumer-soft." />
+            </DCArtboard>
+            <DCArtboard id="basketbot" label="BasketBot · Phase 3" width={820} height={680}>
+              <ProductBrandCard
+                name="BasketBot"
+                sub="Phase 3 · basketbot.ai"
+                Mark={BasketBotMark}
+                signature="#2D5BFF"
+                soft="#DCE4FF"
+                blurb="Autonomous grocery optimiser. Allowed to feel the most technical — the pixel-eyed bot face leans into the AI-native positioning." />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="colour"
+            title="Colour system"
+            subtitle="One palette to govern the group, one signature per product. No purple gradients on white — we lead with deep ink and warm signature accents.">
+            <DCArtboard id="palette-core" label="Group core palette" width={1300} height={820}>
+              <PaletteCore />
+            </DCArtboard>
+            <DCArtboard id="palette-product" label="Product extensions" width={1300} height={820}>
+              <PaletteProducts />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="type"
+            title="Typography"
+            subtitle="Three families, all free + variable. Same stack ships from Next.js web, Expo / React Native mobile, and print.">
+            <DCArtboard id="type-scale" label="Scale" width={1300} height={1200}>
+              <TypeScale />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="voice"
+            title="Brand voice"
+            subtitle="UK English. The friend who's already checked the price.">
+            <DCArtboard id="voice-do-dont" label="Do / Don't" width={1300} height={820}>
+              <VoiceDoDont />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="applied"
+            title="Applied · MyDealz in context"
+            subtitle="The system in use. Deal card is the atom; the hero shows the atom assembled, on Ink, on the home page.">
+            <DCArtboard id="deal-card" label="Deal card · primary atom" width={440} height={680}>
+              <div style={{ padding: 40, background: '#FBF8F2', height: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MyDealzDealCard />
+              </div>
+            </DCArtboard>
+            <DCArtboard id="hero-banner" label="Home page hero · dark mode" width={1440} height={820}>
+              <MyDealzHero />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

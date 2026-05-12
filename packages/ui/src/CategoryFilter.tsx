@@ -1,16 +1,16 @@
 import React from 'react'
 
 const CATEGORIES = [
-  { label: 'All Deals',    value: null,        emoji: '✦' },
-  { label: 'Tech',         value: 'Tech',       emoji: '💻' },
-  { label: 'Audio',        value: 'Audio',      emoji: '🎧' },
-  { label: 'TVs',          value: 'TVs',        emoji: '📺' },
-  { label: 'Kitchen',      value: 'Kitchen',    emoji: '🍳' },
-  { label: 'Home',         value: 'Home',       emoji: '🏠' },
-  { label: 'Toys',         value: 'Toys',       emoji: '🧸' },
-  { label: 'Fashion',      value: 'Fashion',    emoji: '👗' },
-  { label: 'Sports',       value: 'Sports',     emoji: '⚽' },
-  { label: 'Beauty',       value: 'Beauty',     emoji: '✨' },
+  { label: 'All Deals', value: null,       emoji: '✦' },
+  { label: 'Tech',      value: 'Tech',     emoji: '💻' },
+  { label: 'Audio',     value: 'Audio',    emoji: '🎧' },
+  { label: 'TVs',       value: 'TVs',      emoji: '📺' },
+  { label: 'Kitchen',   value: 'Kitchen',  emoji: '🍳' },
+  { label: 'Home',      value: 'Home',     emoji: '🏠' },
+  { label: 'Toys',      value: 'Toys',     emoji: '🧸' },
+  { label: 'Fashion',   value: 'Fashion',  emoji: '👗' },
+  { label: 'Sports',    value: 'Sports',   emoji: '⚽' },
+  { label: 'Beauty',    value: 'Beauty',   emoji: '✨' },
 ]
 
 export function CategoryFilter({
@@ -21,17 +21,17 @@ export function CategoryFilter({
   forYouActive?: boolean
 }) {
   return (
-    <div className="bg-white/70 backdrop-blur border-b border-gray-100">
+    <div className="bg-chalk border-b border-mist">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
 
-          {/* AI "Deals for you" pill — always first */}
+          {/* Deals for you */}
           <a
             href="/for-you"
-            className={`shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-1.5 rounded-full border transition-all duration-150 whitespace-nowrap ${
+            className={`shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-full border transition-all duration-150 whitespace-nowrap ${
               forYouActive
-                ? 'bg-gradient-to-r from-brand-500 to-amber-500 text-white border-transparent shadow-md shadow-brand-500/40'
-                : 'bg-gradient-to-r from-brand-500 to-amber-500 text-white border-transparent shadow-sm shadow-brand-500/20 opacity-90 hover:opacity-100 hover:shadow-md'
+                ? 'bg-mydealz text-white border-mydealz shadow-sm'
+                : 'bg-mydealz text-white border-mydealz shadow-sm opacity-90 hover:opacity-100'
             }`}
           >
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -40,20 +40,18 @@ export function CategoryFilter({
             Deals for you
           </a>
 
-          {/* Divider */}
-          <div className="w-px h-5 bg-gray-200 shrink-0" />
+          <div className="w-px h-5 bg-mist shrink-0" />
 
-          {/* Category pills */}
           {CATEGORIES.map((cat) => {
             const isActive = !forYouActive && (active === cat.value || (!active && cat.value === null))
             return (
               <a
                 key={cat.label}
                 href={cat.value ? `/?category=${cat.value}` : '/'}
-                className={`shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-full border transition-all duration-150 whitespace-nowrap ${
+                className={`shrink-0 inline-flex items-center gap-1.5 text-sm font-medium px-4 py-1.5 rounded-full border transition-all duration-150 whitespace-nowrap ${
                   isActive
-                    ? 'bg-brand-500 text-white border-brand-500 shadow-sm shadow-brand-500/30'
-                    : 'text-gray-600 border-gray-200 bg-white hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50'
+                    ? 'bg-ink text-cream border-ink'
+                    : 'text-ink-80 border-mist bg-white hover:border-ink-40 hover:text-ink'
                 }`}
               >
                 <span className="text-base leading-none">{cat.emoji}</span>

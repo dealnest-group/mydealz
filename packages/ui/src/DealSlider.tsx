@@ -18,7 +18,7 @@ export type SliderDeal = {
 
 function SliderCard({ deal }: { deal: SliderDeal }) {
   const [imgFailed, setImgFailed] = useState(!deal.imageUrl)
-  const pct = deal.discountPct ? Math.round(deal.discountPct) : null
+  const pct = deal.discountPct ? Math.round(Math.abs(deal.discountPct)) : null
   const saving =
     deal.priceWas && deal.priceWas > deal.priceCurrent
       ? (deal.priceWas - deal.priceCurrent).toFixed(2)
@@ -27,10 +27,10 @@ function SliderCard({ deal }: { deal: SliderDeal }) {
   return (
     <a
       href={`/deals/${deal.id}`}
-      className="group snap-start shrink-0 w-[280px] sm:w-[300px] flex flex-col rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-250 bg-white"
+      className="group snap-start shrink-0 w-[280px] sm:w-[300px] flex flex-col rounded-[18px] overflow-hidden shadow-card hover:-translate-y-1 transition-all duration-200 bg-white border border-mist"
     >
       {/* Image */}
-      <div className="relative h-48 bg-gradient-to-br from-brand-50 to-orange-100 overflow-hidden shrink-0">
+      <div className="relative overflow-hidden shrink-0" style={{ aspectRatio: '16/10' }}>
         {!imgFailed && deal.imageUrl ? (
           <img
             src={deal.imageUrl}
@@ -41,52 +41,61 @@ function SliderCard({ deal }: { deal: SliderDeal }) {
             onError={() => setImgFailed(true)}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-brand-50 to-orange-100 gap-2">
-            <CategoryIcon category={deal.category} className="w-12 h-12 text-brand-400" />
+          <div className="w-full h-full flex flex-col items-center justify-center bg-mist gap-2">
+            <CategoryIcon category={deal.category} className="w-10 h-10 text-ink-40" />
           </div>
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex gap-1.5">
+        <div className="absolute top-3.5 left-3.5 flex gap-1.5">
           {pct && pct > 0 && (
-            <span className="bg-brand-500 text-white text-xs font-black px-2.5 py-1 rounded-full shadow">
-              -{pct}%
+            <span
+              className="font-mono text-white"
+              style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', background: '#0E1B2C', padding: '5px 9px', borderRadius: 6 }}
+            >
+              −{pct}%
             </span>
           )}
-        </div>
-        <div className="absolute top-3 right-3">
-          <span className="bg-white/90 backdrop-blur text-[10px] font-bold text-brand-600 px-2 py-0.5 rounded-full">
-            AI {deal.authenticityScore}
-          </span>
+          {deal.retailerName && (
+            <span
+              className="font-mono text-ink-80"
+              style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', background: 'rgba(255,255,255,0.92)', padding: '5px 9px', borderRadius: 6 }}
+            >
+              {deal.retailerName}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="flex flex-col flex-1 p-4 gap-2">
-        {deal.retailerName && (
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-            {deal.retailerName}
-          </p>
-        )}
-        <h3 className="text-sm font-bold text-gray-900 line-clamp-2 flex-1 leading-snug">
+        <h3 className="text-sm font-medium text-ink line-clamp-2 flex-1 leading-[1.4]">
           {deal.title}
         </h3>
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-xl font-black text-gray-900">£{deal.priceCurrent.toFixed(2)}</span>
+          <span
+            className="font-display font-bold text-ink"
+            style={{ fontSize: 22, letterSpacing: '-0.02em' }}
+          >
+            £{deal.priceCurrent.toFixed(2)}
+          </span>
           {deal.priceWas && (
-            <span className="text-xs text-gray-400 line-through">£{deal.priceWas.toFixed(2)}</span>
+            <span className="text-sm text-ink-60 line-through">£{deal.priceWas.toFixed(2)}</span>
           )}
           {saving && (
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+            <span
+              className="ml-auto font-mono text-mydealz-deep bg-mydealz-soft"
+              style={{ fontSize: 11, fontWeight: 500, padding: '3px 8px', borderRadius: 999 }}
+            >
               Save £{saving}
             </span>
           )}
         </div>
-        <div className="mt-1 text-center text-sm font-bold text-brand-500 group-hover:text-brand-600 transition-colors">
-          View Deal →
+        <div
+          className="mt-1 text-center font-semibold text-mydealz group-hover:brightness-90 transition-[filter]"
+          style={{ fontSize: 14 }}
+        >
+          Get this deal →
         </div>
       </div>
     </a>
@@ -104,37 +113,34 @@ export function DealSlider({ deals, title = 'Featured Deals' }: { deals: SliderD
   if (deals.length === 0) return null
 
   return (
-    <section className="py-10">
+    <section className="py-10 bg-chalk">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header row */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">✦</span>
-            <div>
-              <h2 className="text-xl font-black text-gray-900">{title}</h2>
-              <p className="text-sm text-gray-400">Top verified deals right now</p>
-            </div>
+          <div>
+            <h2
+              className="font-display font-bold text-ink"
+              style={{ fontSize: 22, letterSpacing: '-0.015em' }}
+            >
+              {title}
+            </h2>
+            <p className="text-sm text-ink-60 mt-0.5">Top verified deals right now</p>
           </div>
           {/* Arrow buttons */}
           <div className="hidden sm:flex gap-2">
-            <button
-              onClick={() => scroll('left')}
-              className="w-9 h-9 rounded-full border border-gray-200 bg-white hover:bg-brand-50 hover:border-brand-300 flex items-center justify-center transition-colors shadow-sm"
-              aria-label="Scroll left"
-            >
-              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              className="w-9 h-9 rounded-full border border-gray-200 bg-white hover:bg-brand-50 hover:border-brand-300 flex items-center justify-center transition-colors shadow-sm"
-              aria-label="Scroll right"
-            >
-              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            {(['left', 'right'] as const).map((dir) => (
+              <button
+                key={dir}
+                onClick={() => scroll(dir)}
+                className="w-9 h-9 rounded-full border border-mist bg-white hover:border-mydealz flex items-center justify-center transition-colors"
+                aria-label={`Scroll ${dir}`}
+              >
+                <svg className="w-4 h-4 text-ink-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                    d={dir === 'left' ? 'M15 19l-7-7 7-7' : 'M9 5l7 7-7 7'} />
+                </svg>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -148,8 +154,7 @@ export function DealSlider({ deals, title = 'Featured Deals' }: { deals: SliderD
           ))}
         </div>
 
-        {/* Scroll hint on mobile */}
-        <p className="text-center text-xs text-gray-400 mt-4 sm:hidden">Swipe to see more →</p>
+        <p className="text-center text-xs text-ink-40 mt-4 sm:hidden">Swipe to see more →</p>
       </div>
     </section>
   )

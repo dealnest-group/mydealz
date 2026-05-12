@@ -8,6 +8,39 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // DealNest group core
+        ink: {
+          DEFAULT: '#0E1B2C',
+          80: '#3C4858',
+          60: '#6B7689',
+          40: '#9CA4B4',
+        },
+        cream:  '#F6F1E7',
+        chalk:  '#FBF8F2',
+        mist:   '#E8E4DA',
+        sage:   '#0EA968',
+        rust:   '#C24A3B',
+        amber: {
+          DEFAULT: '#F4A547',
+          dark:    '#F8B860',
+        },
+        // Product signatures
+        mydealz: {
+          DEFAULT: '#0EA968',
+          deep:    '#0B8553',
+          soft:    '#D8F1E4',
+        },
+        rewardloop: {
+          DEFAULT: '#FF6B5B',
+          deep:    '#D44A3A',
+          soft:    '#FFE2DC',
+        },
+        basketbot: {
+          DEFAULT: '#2D5BFF',
+          deep:    '#1E3FD9',
+          soft:    '#DCE4FF',
+        },
+        // Legacy — kept so existing components don't break
         brand: {
           50:  '#fff7ed',
           100: '#ffedd5',
@@ -20,7 +53,16 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        sans:    ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)',    'system-ui', 'sans-serif'],
+        mono:    ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      boxShadow: {
+        card:         '0 1px 0 rgba(14,27,44,0.03), 0 8px 24px -12px rgba(14,27,44,0.12)',
+        'card-float': '0 16px 40px -16px rgba(0,0,0,0.4)',
+        // Legacy
+        'card-hover': '0 12px 40px rgba(249,115,22,0.18), 0 2px 8px rgba(0,0,0,0.06)',
+        glass:        '0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.1)',
       },
       keyframes: {
         scaleIn: {
@@ -62,11 +104,6 @@ const config: Config = {
       },
       backgroundSize: {
         '800': '800px 100%',
-      },
-      boxShadow: {
-        card:       '0 2px 16px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)',
-        'card-hover': '0 12px 40px rgba(249,115,22,0.18), 0 2px 8px rgba(0,0,0,0.06)',
-        glass:      '0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.1)',
       },
     },
   },
