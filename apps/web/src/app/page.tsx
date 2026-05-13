@@ -1,6 +1,7 @@
 import { supabase } from '@mydealz/db'
 import { Hero, DealCard, CategoryFilter, DealSlider } from '@mydealz/ui'
 import type { SliderDeal } from '@mydealz/ui'
+import { logger } from '@/lib/logger'
 
 type DealRow = {
   id: string
@@ -58,7 +59,7 @@ async function getDeals(category?: string, search?: string): Promise<DealRow[]> 
 
   const { data, error } = await query
   if (error) {
-    console.error('Deals fetch error:', error.message)
+    logger.error('Deals fetch error', new Error(error.message))
     return []
   }
   return (data ?? []) as DealRow[]

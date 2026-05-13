@@ -23,8 +23,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
 
-  test:
-    name: Tests
+  test-ts:
+    name: TypeScript Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,4 +36,30 @@ jobs:
           node-version: '20'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test
+      - name: Run Vitest with coverage
+        run: pnpm --filter @mydealz/api vitest run --coverage
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ts-coverage
+          path: packages/api/coverage/
+
+  test-python:
+    name: Python Agent Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r packages/agents/requirements.txt pytest pytest-cov
+      - name: Run pytest with coverage
+        run: |
+          pytest packages/agents/tests/ \
+            --cov=packages/agents \
+            --cov-fail-under=60 \
+            --cov-report=xml:coverage-python.xml \
+            -v
