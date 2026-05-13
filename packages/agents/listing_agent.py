@@ -4,14 +4,37 @@ Listing Agent — fetches deals from AWIN/CJ product feeds → upserts pending d
 Supports AWIN (API key + feed ID), CJ (direct URL), and any direct XML feed URL.
 """
 import argparse
+import functools
 import os
 import time
+import uuid
 import xml.etree.ElementTree as ET
+from datetime import datetime, timezone, timedelta
+from typing import Any, Callable
+
 import requests
+
 from db import get_client
 from logger import log
 
 AWIN_API_KEY = os.getenv('AWIN_API_KEY', '')
+FEED_COOLDOWN_MINUTES = 25
+
+
+def with_retry(max_attempts: int = 3, base_delay: float = 1.0) -> Callable:
+    """Retries a function up to max_attempts times with exponential backoff."""
+    def decorator(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            for attempt in range(max_attempts):
+                try:
+                    return fn(*args, **kwargs)
+                except Exception:
+                    if attempt == max_attempts - 1:
+                        raise
+                    time.sleep(base_delay * (2 ** attempt))  # 1s, 2s, 4s
+        return wrapper
+    return decorator
 
 # The exact columns we pull from AWIN — don't remove any, listing_agent.py maps them
 AWIN_COLUMNS = ','.join([
@@ -63,6 +86,7 @@ def build_feed_url(retailer: dict) -> str | None:
     return feed_url
 
 
+@with_retry(max_attempts=3)
 def fetch_feed(url: str) -> list[dict]:
     """Fetches and parses an AWIN-format XML product feed."""
     response = requests.get(url, headers=HEADERS, timeout=60)
@@ -124,14 +148,29 @@ def normalise(deal: dict, retailer_id: str) -> dict:
 
 def run(dry_run: bool = False) -> None:
     start = time.time()
+    run_id = str(uuid.uuid4())
     db = get_client()
+
+    # Idempotency: skip retailers synced within the cooldown window.
+    # A crash+restart will only re-process retailers not yet marked done.
+    cutoff = (
+        datetime.now(timezone.utc) - timedelta(minutes=FEED_COOLDOWN_MINUTES)
+    ).isoformat()
     retailers = (
         db.table('retailers')
         .select('*')
         .eq('active', True)
+        .or_(f'last_fetched_at.is.null,last_fetched_at.lt.{cutoff}')
         .execute()
         .data
     )
+
+    if not retailers:
+        log('listing_agent', 'success', 0, 0, 0, {
+            'run_id': run_id, 'note': 'all retailers recently synced',
+        })
+        return
+
     total, errors = 0, 0
 
     for retailer in retailers:
@@ -148,16 +187,22 @@ def run(dry_run: bool = False) -> None:
             deals_with_discount = [d for d in raw if d.get('price_was')]
             print(f'  {len(deals_with_discount)} with a was-price (discount)')
 
-            for item in deals_with_discount:
-                normalised = normalise(item, retailer['id'])
-                if dry_run:
-                    print(f'  [dry] {normalised["title"][:55]:<55} £{normalised["price_current"]:>7.2f}')
-                else:
-                    db.table('deals').upsert(
-                        normalised,
-                        on_conflict='retailer_id,external_id',
-                    ).execute()
-                total += 1
+            batch = [normalise(item, retailer['id']) for item in deals_with_discount]
+
+            if not dry_run and batch:
+                db.table('deals').upsert(
+                    batch,
+                    on_conflict='retailer_id,external_id',
+                ).execute()
+                # Mark synced so a crash+restart skips this retailer
+                db.table('retailers').update(
+                    {'last_fetched_at': 'now()'}
+                ).eq('id', retailer['id']).execute()
+            elif dry_run:
+                for n in batch:
+                    print(f'  [dry] {n["title"][:55]:<55} £{n["price_current"]:>7.2f}')
+
+            total += len(batch)
 
         except Exception as exc:
             errors += 1
@@ -169,6 +214,7 @@ def run(dry_run: bool = False) -> None:
         total,
         errors,
         int((time.time() - start) * 1000),
+        {'run_id': run_id, 'retailers_attempted': len(retailers), 'dry_run': dry_run},
     )
 
 

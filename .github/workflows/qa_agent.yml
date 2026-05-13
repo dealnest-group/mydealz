@@ -1,0 +1,39 @@
+name: QA Agent
+
+# Validates pending deals every 15 minutes.
+# No live scraping — feed data freshness is the accuracy mechanism.
+# ScraperAPI/retailer APIs will be added in Phase 2 when budget allows.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: qa-agent
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: Validate Pending Deals
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: packages/agents/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r packages/agents/requirements.txt
+
+      - name: Run QA agent
+        working-directory: packages/agents
+        run: python qa_agent.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          AGENT_ENV: production
