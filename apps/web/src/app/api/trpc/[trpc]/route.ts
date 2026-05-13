@@ -4,6 +4,11 @@ import { supabase } from '@mydealz/db'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 
+// Route hits the DB on every request — never pre-render at build time
+// and never cache a stale response.
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 const handler = async (req: Request) =>
   fetchRequestHandler({
     endpoint: '/api/trpc',
