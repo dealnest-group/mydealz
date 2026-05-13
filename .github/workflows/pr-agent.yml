@@ -40,14 +40,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # --- Model: Groq llama-3.1-8b-instant ---
-          # Smaller model picked deliberately: free-tier daily token cap is
-          # 500k (vs 100k for 70B) and per-minute cap is 30k (vs 12k for 70B),
-          # which matters when reviewing large diffs (this monorepo PR is 40k+
-          # tokens). 70B is higher quality but burns the daily cap in one PR.
-          CONFIG.MODEL: groq/llama-3.1-8b-instant
-          CONFIG.FALLBACK_MODELS: '["groq/llama-3.3-70b-versatile"]'
-          CONFIG.MAX_MODEL_TOKENS: "16000"
+          # --- Model: Groq llama-3.3-70b-versatile ---
+          # 8B produces malformed YAML that PR-Agent's parser silently drops,
+          # which is why earlier runs called Groq successfully but no comment
+          # ever appeared. 70B is reliable at structured output. Daily quota
+          # (100k tokens) is fine for normal feature PRs — this monolithic
+          # bootstrap PR is the edge case.
+          CONFIG.MODEL: groq/llama-3.3-70b-versatile
+          CONFIG.FALLBACK_MODELS: '["groq/llama-3.1-8b-instant"]'
+          CONFIG.MAX_MODEL_TOKENS: "12000"
+          CONFIG.TEMPERATURE: "0"
           CONFIG.VERBOSITY_LEVEL: "2"
           # PR-Agent's dotted form + LiteLLM's underscore form — set both
           # so either lookup path resolves the key.
@@ -55,9 +57,12 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
           # --- Auto behaviours on every new PR / push ---
+          # Only auto-review. Auto-describe was eating the token budget AND
+          # running first, leaving nothing for the actual review. Describe
+          # is available as a slash command (/describe) when you want it.
           GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
-          GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
-          GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "false"  # too chatty on auto — keep as slash command
+          GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "false"
+          GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "false"
           # Default only handles 'opened' — explicitly opt into reviews on each
           # push (synchronize) and on reopen / ready-for-review transitions.
           GITHUB_ACTION_CONFIG.PR_ACTIONS: '["opened", "reopened", "ready_for_review", "synchronize"]'
