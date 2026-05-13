@@ -49,6 +49,9 @@ jobs:
           GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
           GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
           GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "false"  # too chatty on auto — keep as slash command
+          # Default only handles 'opened' — explicitly opt into reviews on each
+          # push (synchronize) and on reopen / ready-for-review transitions.
+          GITHUB_ACTION_CONFIG.PR_ACTIONS: '["opened", "reopened", "ready_for_review", "synchronize"]'
 
           # --- Review quality controls ---
           PR_REVIEWER.REQUIRE_SCORE_REVIEW: "true"
