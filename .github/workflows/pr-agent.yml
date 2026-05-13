@@ -40,10 +40,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # --- Model: Groq llama-3.3-70b-versatile (free tier, 6000 req/day) ---
-          CONFIG.MODEL: groq/llama-3.3-70b-versatile
-          CONFIG.FALLBACK_MODELS: '["groq/llama-3.1-8b-instant"]'
+          # --- Model: Groq llama-3.1-8b-instant ---
+          # Smaller model picked deliberately: free-tier daily token cap is
+          # 500k (vs 100k for 70B) and per-minute cap is 30k (vs 12k for 70B),
+          # which matters when reviewing large diffs (this monorepo PR is 40k+
+          # tokens). 70B is higher quality but burns the daily cap in one PR.
+          CONFIG.MODEL: groq/llama-3.1-8b-instant
+          CONFIG.FALLBACK_MODELS: '["groq/llama-3.3-70b-versatile"]'
+          CONFIG.MAX_MODEL_TOKENS: "16000"
+          CONFIG.VERBOSITY_LEVEL: "2"
+          # PR-Agent's dotted form + LiteLLM's underscore form — set both
+          # so either lookup path resolves the key.
           GROQ.KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
           # --- Auto behaviours on every new PR / push ---
           GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
@@ -57,9 +66,10 @@ jobs:
           PR_REVIEWER.REQUIRE_SCORE_REVIEW: "true"
           PR_REVIEWER.REQUIRE_TESTS_REVIEW: "true"
           PR_REVIEWER.REQUIRE_SECURITY_REVIEW: "true"
-          PR_REVIEWER.NUM_CODE_SUGGESTIONS: "4"
-          PR_REVIEWER.INLINE_CODE_COMMENTS: "true"
-          # Don't drown the PR with low-signal nits
+          PR_REVIEWER.NUM_CODE_SUGGESTIONS: "3"
+          # Keep responses short to stay inside Groq's per-minute token budget
+          PR_REVIEWER.MAX_OUTPUT_TOKENS: "1500"
+          PR_REVIEWER.INLINE_CODE_COMMENTS: "false"
           PR_REVIEWER.PERSISTENT_COMMENT: "true"
 
           # --- Describe controls ---
