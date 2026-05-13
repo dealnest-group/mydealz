@@ -2,10 +2,10 @@
  * Structured logger for the web app.
  *
  * In development: writes to the browser/server console.
- * In production:  console output is suppressed; errors are forwarded to Sentry.
+ * In production:  console output is suppressed; errors are forwarded to Sentry
+ *                 if @sentry/nextjs is installed.
  *
  * Never use console.log / console.error directly in app code — use this instead.
- * Rule: any `console.*` call is a lint error (configured in eslint.config.js).
  */
 
 type Meta = Record<string, unknown>
@@ -14,17 +14,22 @@ function isDev() {
   return process.env.NODE_ENV !== 'production'
 }
 
-async function captureWithSentry(message: string, error?: unknown, meta?: Meta) {
-  if (typeof window === 'undefined') return // server-side Sentry handled by SDK automatically
+function captureWithSentry(message: string, error?: unknown, meta?: Meta) {
+  if (typeof window === 'undefined') return // server side handled by Sentry SDK auto-init
+  // Use eval-style require so the missing module never breaks build/typecheck.
+  // @ts-expect-error — @sentry/nextjs is an optional runtime dependency
+  let Sentry: typeof import('@sentry/nextjs') | undefined
   try {
-    const Sentry = await import('@sentry/nextjs')
-    if (error instanceof Error) {
-      Sentry.captureException(error, { extra: { message, ...meta } })
-    } else {
-      Sentry.captureMessage(message, { level: 'error', extra: meta })
-    }
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    Sentry = require('@sentry/nextjs')
   } catch {
-    // Sentry not installed yet — fail silently so logger never crashes the app
+    return
+  }
+  if (!Sentry) return
+  if (error instanceof Error) {
+    Sentry.captureException(error, { extra: { message, ...meta } })
+  } else {
+    Sentry.captureMessage(message, { level: 'error', extra: meta })
   }
 }
 
@@ -48,7 +53,7 @@ export const logger = {
       // eslint-disable-next-line no-console
       console.error(`[error] ${message}`, error ?? '', meta ?? '')
     } else {
-      void captureWithSentry(message, error, meta)
+      captureWithSentry(message, error, meta)
     }
   },
 }

@@ -57,8 +57,9 @@ async function getPersonalisedDeals(userId: string): Promise<{
         .select('id, title, price_current, price_was, discount_pct, authenticity_score, image_url, affiliate_url, category, retailers(name)')
         .in('id', ids)
         .eq('status', 'approved')
-      const ratingsMap = await getRatings((data ?? []).map((d: DealRow) => d.id), supabase)
-      return { deals: (data ?? []) as DealRow[], profile, ratings: ratingsMap }
+      const rows = (data ?? []) as unknown as DealRow[]
+      const ratingsMap = await getRatings(rows.map((d) => d.id), supabase)
+      return { deals: rows, profile, ratings: ratingsMap }
     }
   }
 
@@ -75,7 +76,7 @@ async function getPersonalisedDeals(userId: string): Promise<{
       .in('category', topCats)
       .order('authenticity_score', { ascending: false })
       .limit(24)
-    dealsData = (data ?? []) as DealRow[]
+    dealsData = (data ?? []) as unknown as DealRow[]
   }
 
   // If not enough personalised deals, pad with top-rated
@@ -87,7 +88,7 @@ async function getPersonalisedDeals(userId: string): Promise<{
       .eq('status', 'approved')
       .order('authenticity_score', { ascending: false })
       .limit(24)
-    for (const d of (topDeals ?? []) as DealRow[]) {
+    for (const d of (topDeals ?? []) as unknown as DealRow[]) {
       if (!existingIds.has(d.id)) dealsData.push(d)
       if (dealsData.length >= 24) break
     }

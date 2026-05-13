@@ -29,8 +29,9 @@ async function getRatingStats(dealIds: string[]): Promise<Map<string, RatingStat
     .select('deal_id, score')
     .in('deal_id', dealIds)
 
+  const rows = (data ?? []) as Array<{ deal_id: string; score: number }>
   const map = new Map<string, { sum: number; count: number }>()
-  for (const r of data ?? []) {
+  for (const r of rows) {
     const prev = map.get(r.deal_id) ?? { sum: 0, count: 0 }
     map.set(r.deal_id, { sum: prev.sum + r.score, count: prev.count + 1 })
   }

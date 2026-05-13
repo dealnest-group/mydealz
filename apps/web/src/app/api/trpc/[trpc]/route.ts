@@ -1,7 +1,8 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { appRouter, type Context } from '@mydealz/api'
-import { createClient } from '@mydealz/db'
+import { supabase } from '@mydealz/db'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 const handler = async (req: Request) =>
   fetchRequestHandler({
@@ -10,19 +11,18 @@ const handler = async (req: Request) =>
     router: appRouter,
     createContext: async (): Promise<Context> => {
       // Auth-aware server client — reads session from cookies
-      const supabase = createServerClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const server = createServerClient()
+      const { data: { user } } = await server.auth.getUser()
 
       return {
         // Use the typed singleton for data queries
-        supabase: createClient(),
+        supabase,
         userId: user?.id ?? null,
       }
     },
-    onError({ path, error }) {
+    onError({ path, error }: { path: string | undefined; error: { code: string; message: string } }) {
       if (error.code === 'INTERNAL_SERVER_ERROR') {
-        // Will be picked up by Sentry via the global error handler
-        console.error(`tRPC error on ${path ?? 'unknown'}:`, error) // eslint-disable-line no-console
+        logger.error(`tRPC error on ${path ?? 'unknown'}`, error)
       }
     },
   })
