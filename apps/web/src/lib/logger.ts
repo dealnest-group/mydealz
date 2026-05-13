@@ -16,11 +16,9 @@ function isDev() {
 
 function captureWithSentry(message: string, error?: unknown, meta?: Meta) {
   if (typeof window === 'undefined') return // server side handled by Sentry SDK auto-init
-  // Use eval-style require so the missing module never breaks build/typecheck.
-  // @ts-expect-error — @sentry/nextjs is an optional runtime dependency
-  let Sentry: typeof import('@sentry/nextjs') | undefined
+  // Optional runtime require so the missing module never breaks build/typecheck.
+  let Sentry: { captureException: (e: unknown, opts?: unknown) => void; captureMessage: (m: string, opts?: unknown) => void } | undefined
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
     Sentry = require('@sentry/nextjs')
   } catch {
     return
