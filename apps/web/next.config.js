@@ -1,5 +1,13 @@
 // @ts-check
-const { withSentryConfig } = require('@sentry/nextjs')
+
+// Lazily load @sentry/nextjs — skip if not installed yet so Vercel build
+// never breaks while the dependency is being added to the lockfile.
+let withSentryConfig = (cfg, _opts) => cfg
+try {
+  withSentryConfig = require('@sentry/nextjs').withSentryConfig
+} catch {
+  // Sentry not installed yet — proceed without source map upload.
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -18,11 +26,9 @@ const nextConfig = {
 }
 
 module.exports = withSentryConfig(nextConfig, {
-  // Sentry source map upload — set SENTRY_AUTH_TOKEN in Vercel env vars
   silent: true,
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
-  // Disable source map upload in local dev
   disableServerWebpackPlugin: process.env.NODE_ENV !== 'production',
   disableClientWebpackPlugin: process.env.NODE_ENV !== 'production',
 })

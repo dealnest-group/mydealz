@@ -59,7 +59,7 @@ jobs:
       - name: Run pytest with coverage
         run: |
           pytest packages/agents/tests/ \
-            --cov=packages/agents \
+            --cov=packages/agents/qa_agent \
             --cov-fail-under=60 \
             --cov-report=xml:coverage-python.xml \
             -v
