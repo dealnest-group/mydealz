@@ -1,15 +1,14 @@
 import { TRPCError, initTRPC } from '@trpc/server'
 import { z } from 'zod'
 import superjson from 'superjson'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@mydealz/db'
+import type { TypedSupabaseClient } from '@mydealz/db'
 
 // ---------------------------------------------------------------------------
 // Context
 // ---------------------------------------------------------------------------
 
 export type Context = {
-  supabase: SupabaseClient<Database>
+  supabase: TypedSupabaseClient
   userId: string | null
 }
 
