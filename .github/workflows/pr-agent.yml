@@ -1,0 +1,106 @@
+name: PR Agent (Groq)
+
+# Free AI code reviewer powered by Qodo PR-Agent + Groq's free tier.
+# - Auto-reviews every PR on open and on each new push
+# - Slash commands available in PR comments:
+#     /review        → full code review with severity-ranked findings
+#     /describe      → AI-generated PR title + summary
+#     /improve       → concrete code improvement suggestions
+#     /ask <q>       → ask anything about the diff
+#     /update_changelog → maintain CHANGELOG entries
+#
+# Setup: requires GROQ_API_KEY repo secret.
+# Docs: https://qodo-merge-docs.qodo.ai/
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+# Cancel stale runs when a new commit lands on the same PR — saves Groq quota.
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+  contents: read
+  issues: write
+
+jobs:
+  review:
+    # Skip draft PRs to avoid burning quota on WIP branches
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: PR Agent action
+        uses: qodo-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # --- Model: Groq llama-3.3-70b-versatile ---
+          # 8B produces malformed YAML that PR-Agent's parser silently drops,
+          # which is why earlier runs called Groq successfully but no comment
+          # ever appeared. 70B is reliable at structured output. Daily quota
+          # (100k tokens) is fine for normal feature PRs — this monolithic
+          # bootstrap PR is the edge case.
+          CONFIG.MODEL: groq/llama-3.3-70b-versatile
+          CONFIG.FALLBACK_MODELS: '["groq/llama-3.1-8b-instant"]'
+          CONFIG.MAX_MODEL_TOKENS: "12000"
+          CONFIG.TEMPERATURE: "0"
+          CONFIG.VERBOSITY_LEVEL: "2"
+          # PR-Agent's dotted form + LiteLLM's underscore form — set both
+          # so either lookup path resolves the key.
+          GROQ.KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+          # --- Auto behaviours on every new PR / push ---
+          # Only auto-review. Auto-describe was eating the token budget AND
+          # running first, leaving nothing for the actual review. Describe
+          # is available as a slash command (/describe) when you want it.
+          GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
+          GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "false"
+          GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "false"
+          # Default only handles 'opened' — explicitly opt into reviews on each
+          # push (synchronize) and on reopen / ready-for-review transitions.
+          GITHUB_ACTION_CONFIG.PR_ACTIONS: '["opened", "reopened", "ready_for_review", "synchronize"]'
+
+          # --- Review quality controls ---
+          PR_REVIEWER.REQUIRE_SCORE_REVIEW: "true"
+          PR_REVIEWER.REQUIRE_TESTS_REVIEW: "true"
+          PR_REVIEWER.REQUIRE_SECURITY_REVIEW: "true"
+          PR_REVIEWER.NUM_CODE_SUGGESTIONS: "3"
+          # Keep responses short to stay inside Groq's per-minute token budget
+          PR_REVIEWER.MAX_OUTPUT_TOKENS: "1500"
+          PR_REVIEWER.INLINE_CODE_COMMENTS: "false"
+          PR_REVIEWER.PERSISTENT_COMMENT: "true"
+
+          # --- Describe controls ---
+          PR_DESCRIPTION.PUBLISH_LABELS: "true"
+          PR_DESCRIPTION.ADD_ORIGINAL_USER_DESCRIPTION: "true"
+          PR_DESCRIPTION.GENERATE_AI_TITLE: "false"  # keep your conventional commit title
+
+          # --- Improve controls (used when someone runs /improve) ---
+          PR_CODE_SUGGESTIONS.NUM_CODE_SUGGESTIONS: "6"
+          PR_CODE_SUGGESTIONS.COMMITABLE_CODE_SUGGESTIONS: "false"
+
+          # --- Project-specific guardrails ---
+          # Tell the reviewer about house rules so it doesn't flag false positives.
+          PR_REVIEWER.EXTRA_INSTRUCTIONS: >-
+            This is the MyDealz monorepo (Next.js + tRPC + Supabase + Python agents).
+            House rules from CLAUDE.md:
+            - No console.log/error in app code — use the logger utility instead.
+            - All DB access goes through @mydealz/db, never @supabase/supabase-js directly.
+            - tRPC procedures must have a Zod input schema.
+            - Python agents must be stateless, support --dry-run, and log structured JSON.
+            - Migrations live in packages/db/migrations/ as numbered SQL files.
+            - PR ownership is enforced: web=Adnan, api/db/agents=Imran, mobile=Bro3, extension=Bro4.
+            Flag any deviation from these rules. Focus on real bugs and security issues,
+            not stylistic preferences.
+
+          PR_CODE_SUGGESTIONS.EXTRA_INSTRUCTIONS: >-
+            Prioritise suggestions that fix real bugs, security issues, or performance
+            problems. Skip purely stylistic suggestions. Never suggest adding console
+            logging — the project uses a logger utility.

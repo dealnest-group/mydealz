@@ -175,7 +175,7 @@ export function ProfileSettings({ user }: Props) {
       {/* Danger zone */}
       <div className="bg-white rounded-2xl shadow-card px-5 py-4">
         <p className="text-sm font-bold text-gray-900 mb-1">Sign Out</p>
-        <p className="text-xs text-gray-400 mb-3">You'll need to sign in again on this device.</p>
+        <p className="text-xs text-gray-400 mb-3">You&apos;ll need to sign in again on this device.</p>
         <form action="/auth/signout" method="POST">
           <button
             type="submit"

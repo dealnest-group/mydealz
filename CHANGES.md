@@ -1,267 +1,204 @@
-# MyDealz — Changes & Scope Tracker
+# MyDealz — Session Log & Team Brief
 
-> Read this at the start of every session for a quick brief. Update it at the end of every session.
-
-_Last updated: 2026-05-12 (end of day)_
+> **Protocol:** Read the "Current State" table at the start of every session.
+> Update "Current State" and add a session entry at the end of every session.
+> Keep entries factual — what was built, what broke, what's next.
+> This file is the single source of truth for where the project is right now.
 
 ---
 
-## Quick Brief — Start Here Each Morning
+## How to start the dev server
 
-**What the app is:** MyDealz — "Your Personal AI Savings Companion. Save Smarter. Every Time."
-UK deals aggregator with AI deal verification (Groq LLM), pgvector personalisation, and social features.
-
-**Where to run it:**
-```powershell
-# Set Node PATH first (required on this machine)
-$env:PATH = "C:\Users\Imran Janwari\AppData\Roaming\npm;C:\Program Files\nodejs;" + $env:PATH
-
+### macOS / Linux
+```bash
 # Web app
-cd apps/web && pnpm dev         # runs on localhost:3001 (3000 often occupied)
+cd apps/web && pnpm dev          # http://localhost:3000
 
-# Agents
-cd packages/agents
-py scraper_agent.py             # scrape Aldi + fetch OG images
-py qa_agent.py                  # score pending deals with Groq
-py embedding_agent.py           # embed approved deals (fastembed, local)
-py personalisation_agent.py     # build user preference profiles
+# Agents (from packages/agents/)
+python listing_agent.py --dry-run
+python qa_agent.py --dry-run
+python embedding_agent.py --dry-run
+python personalisation_agent.py --dry-run
 ```
 
-**DB:** Supabase — `zadlakzrhyexeluvauun.supabase.co`
-**Branch:** `base-setup` → push to `origin/base-setup`
+### Windows (PowerShell)
+```powershell
+# Add node to PATH if needed (adjust version to your install)
+$env:PATH = "$env:APPDATA\npm;C:\Program Files\nodejs;" + $env:PATH
+
+# Web app
+cd apps/web; pnpm dev            # http://localhost:3000 or :3001 if 3000 occupied
+
+# Agents (from packages/agents/)
+py listing_agent.py --dry-run
+py qa_agent.py --dry-run
+```
+
+### Prerequisites (all platforms)
+```bash
+pnpm install          # from repo root — installs all workspaces
+pip install -r packages/agents/requirements.txt
+ollama pull llama3.1:8b && ollama pull nomic-embed-text   # local AI
+```
+
+### Environment variables
+Copy the example files — **never commit `.env.local`**:
+```bash
+cp .env.example .env.local                              # web vars
+cp packages/agents/.env.example packages/agents/.env.local  # agent vars
+```
+Real values are in the shared password manager (ask Imran).
 
 ---
 
-## What Was Built — Session Log
+## Supabase project
+- **URL:** `https://zadlakzrhyexeluvauun.supabase.co`
+- **Dashboard:** Supabase → Project `mydealz-prod`
+- Migrations: run numbered SQL files in `packages/db/migrations/` in order via the SQL editor
+
+---
+
+## Current State
+
+| Component | Status | Owner | Notes |
+|---|---|---|---|
+| Database | ✅ Live | Imran | 9 tables, migrations 0001–0006 |
+| RLS policies | ✅ In migration 0006 | Imran | Run 0006 in Supabase if not done |
+| updated_at triggers | ✅ In migration 0006 | Imran | Run 0006 in Supabase if not done |
+| Web app | ✅ All pages live | Adnan | /, /deals/[id], /auth, /profile, /for-you, /privacy, /terms, /about |
+| Deals | ✅ 17 approved | Imran | All have 768-dim embeddings |
+| pgvector similarity | ⚠️ Partial | Imran | match_deals_for_user RPC installed; user embeddings not yet computed |
+| Social features | ✅ Live | Adnan | Ratings, comments, reactions |
+| Personalisation | ⚠️ Partial | Imran | Category fallback works; vector similarity needs user embeddings |
+| Python agents | ✅ All 5 working | Imran | listing, qa, scraper, embedding, personalisation |
+| GH Actions workflows | ✅ Root .github/ | Imran | CI, listing agent, QA agent, AI reviewer |
+| Error boundaries | ✅ Added | Adnan | error.tsx + global-error.tsx |
+| Sentry | ⚠️ Config only | Adnan | Needs NEXT_PUBLIC_SENTRY_DSN in Vercel env vars |
+| PostHog | ❌ Not wired | Adnan | Install @posthog/nextjs, add NEXT_PUBLIC_POSTHOG_KEY |
+| tRPC | ⚠️ Placeholder | Imran | Real procedures needed before mobile app starts |
+| Mobile app | ❌ Scaffold only | Brother 3 | Start Sprint 3 |
+| Extension | ❌ Scaffold only | Brother 4 | Start Sprint 3 |
+| AWIN feeds | ⚠️ Pending approval | Imran | Applications submitted, waiting on Currys, Argos, John Lewis |
+| Tests | ❌ None yet | All | Vitest + pytest infrastructure needed |
+| Staging env | ❌ Not set up | Imran | Vercel preview deploys act as staging for now |
+
+---
+
+## Priority queue (what to do next, in order)
+
+1. **[Imran]** Run migration `0006_rls_and_triggers.sql` in Supabase — tables are currently unprotected
+2. **[Imran]** Compute user profile embeddings in `personalisation_agent.py` (see session 5 notes)
+3. **[Imran]** Add real tRPC procedures (`deals.list`, `deals.getById`) before mobile starts
+4. **[Adnan]** Wire PostHog analytics — install `@posthog/nextjs`, add to layout.tsx
+5. **[Adnan]** Add `NEXT_PUBLIC_SENTRY_DSN` to Vercel env vars to activate error tracking
+6. **[All]** Set up test infrastructure (Vitest + pytest) — required before any new feature PRs
+7. **[Brother 3]** Start Expo mobile app setup (see `apps/mobile/` scaffold)
+8. **[Brother 4]** Start Plasmo extension (see `apps/extension/src/matches.ts`)
+
+---
+
+## Session log
 
 ### Session 1 (initial scaffolding)
 - Monorepo structure: Next.js 14, Expo, Plasmo, tRPC, Supabase
 
 ### Session 2 (agents + DB schema)
-- Migration 0001: 6 tables (deals, retailers, price_history, user_profiles, user_signals, agent_logs) with RLS + updated_at triggers + pgvector
-- Python agents: listing_agent, qa_agent, scraper_agent, seed_test_data, llm.py, db.py, logger.py, embedder.py
+- Migration 0001: 6 tables with pgvector
+- Python agents: listing, qa, scraper, embedding, personalisation scaffold
 - Aldi UK scraping via ScraperAPI + OG image fetching
-- 18 approved deals in DB (12 Aldi + 6 test deals with Unsplash images)
-- AWIN listing_agent: reads feed ID from retailers.feed_url, constructs full AWIN URL from AWIN_API_KEY env
+- 18 approved deals in DB (12 Aldi + 6 test deals)
+- AWIN listing agent: reads feed ID from retailers.feed_url, builds AWIN API URL
 
 ### Session 3 (web frontend + auth)
-- Next.js 14 App Router with Tailwind CSS 3.4 + Plus Jakarta Sans font
-- brand-50 → brand-700 orange palette defined in tailwind.config.ts
-- SplashScreen: localStorage-based, shows ONCE ever on first visit only
-- Hero: dark charcoal banner, headline, search bar, live stats
-- DealSlider: horizontal scroll carousel with arrow nav + scroll-snap
-- DealCard: 'use client', object-cover images, onError → SVG category icon fallback
-- CategoryFilter: scrollable emoji + label pills
-- CategoryIcon: SVG icon map for 9 product categories (Tech→Laptop, Audio→Headphones, etc.)
-- Header: glass-blur sticky, plain HTML form search (works without JS), profile link
-- Supabase Auth: email + password sign in/up at /auth, middleware session refresh
-- Search: server-side ilike via GET /?search=query
-- Loading skeleton via loading.tsx
+- Next.js 14 App Router + Tailwind CSS 3.4 + Plus Jakarta Sans font
+- brand-50 → brand-700 orange palette in tailwind.config.ts
+- SplashScreen (localStorage, shows once), Hero, DealSlider, DealCard, CategoryFilter, Header
+- Supabase Auth: email/password at /auth, middleware session refresh
+- Server-side search via GET /?search=query
 
 ### Session 4 (deal detail + social + UI polish)
-- DealCard: 'use client' to fix onError, absolute inset-0 img inside aspect-[4/3] fixes overflow
-- Removed crossOrigin=anonymous (caused CORS block on some images)
-- StarIcon + StarRow extracted to packages/ui/src/StarIcon.tsx (shared between DealCard + DealRating)
-- Migration 0002: deal_ratings (1–5 star), deal_comments (threaded), comment_reactions (like/heart/fire) with full RLS
+- Migration 0002: deal_ratings (1–5 star), deal_comments (threaded), comment_reactions
 - Deal detail page (/deals/[id]): image, price, AI score bar, retailer, breadcrumb
-- DealRating client component: interactive 5-star, optimistic updates
-- DealComments client component: post, reply inline, react (👍❤️🔥), toggle reactions
-- Similar deals section on detail page
-- DealImage client component (handles onError without SSR issue)
-- Batch ratings query in page.tsx (2 queries total, not N+1)
-- Star ratings on DealCard (avgRating + ratingCount props)
+- DealRating (interactive 5-star, optimistic), DealComments (post/reply/react)
+- Batch ratings query in page.tsx (2 queries total, no N+1)
+- StarIcon + StarRow extracted to packages/ui/src/StarIcon.tsx
 
 ### Session 5 (personalisation + brand + profile)
+- Migration 0003: preferences jsonb on user_profiles; ivfflat embedding indexes
+- Migration 0004: match_deals_for_user() Postgres RPC (pgvector cosine distance)
+- embedding_agent.py: fastembed nomic-embed-text-v1 → deals.embedding (17/17 done ✓)
+- personalisation_agent.py: ratings/comments/reactions → preferences JSON (1 user ✓)
+- /for-you page: pgvector similarity when embedding exists, category fallback otherwise
+- /profile page: avatar, stats, activity timeline, password change
+- Brand: "Your Personal AI Savings Companion. Save Smarter. Every Time."
 
-#### Brand rebrand
-- Product: "Your Personal AI Savings Companion"
-- Slogan: "Save Smarter. Every Time."
-- Hero headline updated, site metadata updated across all pages
+### Session 6 (UI redesign)
+- DealNest brand system: full UI redesign merged via ui-redesign branch
 
-#### User profile page (/profile)
-- Avatar: initials in colour-coded circle (hash of user ID → consistent colour)
-- Stats row: deals rated / comments / reactions counts
-- Activity timeline: all comments (with quote), ratings (with StarRow), reactions — merged and sorted by date, each links to the deal
-- ProfileSettings client component:
-  - Update display name (Supabase updateUser metadata)
-  - Change password (re-authenticates first with current password, then updates)
-  - Sign out button
-- Header: logged-in state shows avatar circle + username → /profile link
+### Session 7 (agent reliability + CI fix) — Imran
+- fix/agent-reliability branch (PR to develop)
+- listing_agent.py: idempotency via last_fetched_at, with_retry decorator, run_id logging
+- qa_agent.py: removed live scraping, replaced with feed-data validators + stale deal auto-reject
+- llm.py: 3-attempt exponential backoff retry
+- CI workflows moved from infra/.github/ to root .github/ (were not running before)
+- AI PR reviewer added: .github/workflows/ai_review.yml + .github/scripts/ai_review.py
+- Migration 0005: last_fetched_at on retailers, performance indexes
 
-#### "Deals for you" + personalisation engine
-- CategoryFilter: "Deals for you" gradient orange pill added as first item (always visible)
-  - Separated from category filters by a visual divider
-  - Highlights (active state) when on /for-you route
-  - Links to /for-you for everyone (unauthenticated users get redirected to /auth)
-
-- `/for-you` page:
-  - Dark gradient hero banner with "Deals Made Just For You" headline
-  - Shows user's top interest categories as orange tags
-  - Onboarding state for new users with explanation of how learning works
-  - Two-tier recommendation logic:
-    1. pgvector cosine similarity (when user_profiles.embedding exists)
-    2. Category-preference scoring fallback (always works)
-    3. Pads with top-rated deals if fewer than 8 personalised matches
-  - Full deal grid with ratings
-
-- embedding_agent.py:
-  - Generates 768-dim nomic-embed-text-v1 vectors for approved deals
-  - Uses fastembed (ONNX local runtime) — no API key needed, same model as planned
-  - HuggingFace API tried first if HF_API_KEY set, falls through to fastembed on failure
-  - Note: HF free inference API changed permissions in 2024 (new router requires different token type)
-  - fastembed caches model locally at ~260MB after first download
-  - STATUS: 17/17 approved deals have 768-dim vectors in deals.embedding ✓
-
-- personalisation_agent.py:
-  - Reads ratings (weight = score × 1), comments (weight = 3), reactions (fire=2, heart=1.5, like=1)
-  - Builds top_categories + avg_price preference profile
-  - Stores as preferences jsonb in user_profiles table
-  - STATUS: 1 user profiled — top=['Toys'], avg_price=£104.99 ✓
-  - NOTE: Does NOT yet compute user_profiles.embedding (vector) — that's tomorrow
-
-- Migration 0003: preferences jsonb column on user_profiles, ivfflat indexes on both embedding columns
-- Migration 0004: match_deals_for_user(user_id, count) Postgres RPC function using pgvector <=> cosine distance
-  - SECURITY DEFINER so row-level security applies to underlying tables
-  - STATUS: Both migrations executed in Supabase ✓
+### Session 8 (production hardening) — Adnan
+- Migration 0006: full RLS policies on all 9 tables + updated_at triggers (RUN THIS IN SUPABASE)
+- Privacy policy, Terms of Use, About pages — GDPR + ASA compliant
+- Web logger utility (apps/web/src/lib/logger.ts) — replaces all console.* calls
+- Error boundaries: error.tsx + global-error.tsx
+- Sentry config: sentry.client.config.ts + sentry.server.config.ts + next.config.js wiring
+- CLAUDE.md: Supabase client rules, testing requirements, team ownership, settled decisions
+- CHANGES.md: rewritten as multi-person platform-agnostic protocol
+- docs/ROLES.md, docs/DECISIONS.md, package READMEs created
 
 ---
 
-## Current State (end of session)
-
-| Component | Status |
-|---|---|
-| Database | 4 migrations executed. 9 tables live with full RLS |
-| Deals | 17 approved, all with 768-dim embeddings + images |
-| User profiles | 1 profile with preferences. Embedding vector not yet computed |
-| Vector RPC | match_deals_for_user() installed and ready |
-| /for-you | Live — using category fallback (will auto-upgrade to vector once user embedding built) |
-| Agents | All 6 agents working. fastembed replaces HF API for embeddings |
-| Web app | All pages: /, /deals/[id], /auth, /profile, /for-you |
-| AWIN | Key configured. Waiting for advertiser programme approvals |
-| eBay API | Developer account applied. Pending approval |
-| GH Actions | Workflow files in infra/.github/ — NOT yet in root .github/ (GH won't pick them up) |
-
----
-
-## Tomorrow — Start Here
-
-### Priority 1: Complete the vector personalisation loop (30 min)
-
-The `match_deals_for_user` RPC is installed but returns empty results because
-`user_profiles.embedding` is NULL for all users. personalisation_agent.py builds the
-`preferences` JSON but doesn't compute the embedding vector yet.
-
-**Fix needed in personalisation_agent.py:**
-```python
-# After building category scores, compute weighted mean of deal embeddings
-# for all deals the user interacted with, store as user_profiles.embedding
-weighted_vecs = []
-for rating in ratings:
-    deal_vec = get_deal_embedding(rating['deal_id'])
-    weighted_vecs.append((deal_vec, rating['score']))  # weight by score
-# ... compute weighted mean
-# db.table('user_profiles').update({'embedding': mean_vec}).eq('id', uid)
-```
-
-Once this is done:
-1. `py personalisation_agent.py` → user_profiles.embedding is set
-2. /for-you automatically switches from category fallback → real pgvector similarity
-3. The "Deals for you" pill shows truly personalised deals
-
-### Priority 2: Move GH Actions workflows to root (15 min)
-
-Workflows live at `infra/.github/workflows/` but GitHub only reads from root `.github/workflows/`.
-Move them so CI + agent scheduling actually runs in the cloud.
-
-```powershell
-mkdir .github\workflows
-copy infra\.github\workflows\*.yml .github\workflows\
-git add .github/
-git commit -m "chore: move GH Actions workflows to root for GitHub to pick up"
-```
-
-### Priority 3: AWIN retailer feeds (when approved)
-
-Once AWIN approves programme applications (Currys, Argos, Very, AO, John Lewis):
-1. Get feed IDs from AWIN dashboard → Reports → Data Feeds
-2. Insert into Supabase retailers table:
-```sql
-INSERT INTO retailers (name, slug, affiliate_network, feed_url, active)
-VALUES ('Currys', 'currys', 'awin', '<feed_id>', true);
-```
-3. `py listing_agent.py` → `py qa_agent.py` → `py embedding_agent.py`
-
-### Priority 4: Mobile app (Expo React Native) — big session
-
-Start `apps/mobile/` setup:
-- Expo SDK 51 with Expo Router
-- NativeWind for Tailwind-style components
-- Home screen: deal feed using existing Supabase client
-- Deal detail screen
-- Auth screen (Supabase magic link works well on mobile)
-
----
-
-## Environment Variables Reference
-
-### Agents (`packages/agents/.env.local` — gitignored)
-```
-SUPABASE_URL=https://zadlakzrhyexeluvauun.supabase.co
-SUPABASE_SERVICE_KEY=<secret>
-AGENT_ENV=production
-GROQ_API_KEY=<secret>
-SCRAPERAPI_KEY=<secret>
-AWIN_API_KEY=<secret>
-HF_API_KEY=<secret>   # optional, fastembed works without it
-```
-
-### Web (`apps/web/.env.local` — gitignored)
-```
-NEXT_PUBLIC_SUPABASE_URL=https://zadlakzrhyexeluvauun.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_HqUuXnZakDHn1fmA0tq_9A_cai5Xt4I
-```
-
----
-
-## Architecture Cheatsheet
+## Architecture cheatsheet
 
 ```
 mydealz/
-├── apps/web/              Next.js 14 App Router + Tailwind
-│   ├── src/app/
-│   │   ├── page.tsx       Home — Hero + DealSlider + CategoryFilter + deal sections
-│   │   ├── deals/[id]/    Deal detail — image, price, AI score, rating, comments, similar
-│   │   ├── for-you/       Personalised feed — pgvector similarity or category fallback
-│   │   ├── profile/       User profile — activity timeline, settings, password change
-│   │   └── auth/          Sign in / Sign up / Sign out / Callback
-│   └── src/lib/supabase/  server.ts (SSR) + client.ts (browser)
+├── apps/web/src/app/
+│   ├── page.tsx              Home — Hero + DealSlider + CategoryFilter + deal sections
+│   ├── deals/[id]/           Deal detail — image, price, AI score, rating, comments
+│   ├── for-you/              Personalised feed — pgvector or category fallback
+│   ├── profile/              Activity timeline, settings, password change
+│   ├── auth/                 Sign in / Sign up / Callback / Sign out
+│   ├── privacy/              GDPR privacy policy
+│   ├── terms/                Terms of use + affiliate disclosure
+│   └── about/                Company info
+│
+├── apps/web/src/lib/
+│   ├── logger.ts             Structured logger → Sentry in production
+│   └── supabase/
+│       ├── client.ts         Browser client (use client components)
+│       └── server.ts         SSR client (use server components needing auth)
 │
 ├── packages/
-│   ├── ui/src/            DealCard, DealSlider, Hero, Header, CategoryFilter,
-│   │                      SplashScreen, CategoryIcon, StarIcon/StarRow
-│   ├── db/src/            Supabase client (supports PUBLISHABLE_KEY + ANON_KEY)
-│   │   migrations/        0001 schema, 0002 social, 0003 personalisation, 0004 vector RPC
-│   ├── agents/            Python agents (no TS agents per CLAUDE.md)
-│   │   ├── listing_agent.py       AWIN/CJ XML feed ingestion
-│   │   ├── qa_agent.py            Groq LLM authenticity scoring
-│   │   ├── scraper_agent.py       Aldi UK via ScraperAPI + OG images
-│   │   ├── embedding_agent.py     fastembed nomic-embed-text-v1 → deals.embedding
-│   │   └── personalisation_agent.py  User preference profiles (preferences JSON)
-│   └── types/src/         Deal, Retailer, UserProfile, UserSignal interfaces
+│   ├── db/src/index.ts       Supabase singleton (public data reads)
+│   ├── db/migrations/        0001–0006 SQL — run in order in Supabase
+│   ├── ui/src/               DealCard, DealSlider, Hero, Header, CategoryFilter,
+│   │                         SplashScreen, CategoryIcon, StarIcon
+│   ├── agents/
+│   │   ├── listing_agent.py  AWIN/CJ feed ingestion (idempotent, retries)
+│   │   ├── qa_agent.py       Feed-data validation + LLM authenticity scoring
+│   │   ├── scraper_agent.py  Aldi/Lidl via ScraperAPI
+│   │   ├── embedding_agent.py fastembed nomic-embed-text → deals.embedding
+│   │   └── personalisation_agent.py  User preference profiles
+│   └── api/src/index.ts      tRPC router (placeholder — real procedures needed)
 │
-└── infra/.github/         GH Actions (must move to root .github/ to activate)
+└── .github/
+    ├── workflows/ci.yml
+    ├── workflows/listing_agent.yml
+    ├── workflows/qa_agent.yml
+    └── workflows/ai_review.yml
 ```
 
 ---
 
-## Scope Guardrails (CLAUDE.md — never deviate without asking)
-- No OpenAI — Groq for cloud LLM
-- No Prisma — raw SQL in packages/db/migrations/
-- No Redux/Zustand — tRPC cache + React context
-- No Axios — native fetch or tRPC client
-- No Express/Fastify — Next.js API routes only
-- No BullMQ — GitHub Actions cron for scheduling
-- No AWS — Vercel + Supabase + Fly.io only
-- Python-only agents — no TypeScript agents
-- No `any` TypeScript — fix properly
-- No default exports except Next.js pages and Expo screens
+## Scope guardrails (never deviate without asking Imran)
+See `docs/DECISIONS.md` for the full ADR.
+No OpenAI · No Prisma · No Redux/Zustand · No BullMQ · No AWS · No Express/Fastify
+Python-only agents · Extension: retailer domains only (Interpretation A)

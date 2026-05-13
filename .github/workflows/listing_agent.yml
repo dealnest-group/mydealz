@@ -1,0 +1,41 @@
+name: Listing Agent
+
+# Runs every 30 minutes. Note: GitHub Actions cron is best-effort — actual
+# firing can be 5–20 minutes late under heavy platform load. This is acceptable
+# for Phase 1. The agent's own 25-minute cooldown per retailer prevents
+# double-processing even if two runs overlap.
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+# Prevent two listing runs from racing — queue the second one rather than
+# cancelling it, so no feed window is ever fully skipped.
+concurrency:
+  group: listing-agent
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: Fetch & Upsert Deals
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: packages/agents/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r packages/agents/requirements.txt
+
+      - name: Run listing agent
+        working-directory: packages/agents
+        run: python listing_agent.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AGENT_ENV: production

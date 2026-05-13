@@ -1,6 +1,7 @@
 import { supabase } from '@mydealz/db'
 import { Hero, DealCard, CategoryFilter, DealSlider } from '@mydealz/ui'
 import type { SliderDeal } from '@mydealz/ui'
+import { logger } from '@/lib/logger'
 
 type DealRow = {
   id: string
@@ -28,8 +29,9 @@ async function getRatingStats(dealIds: string[]): Promise<Map<string, RatingStat
     .select('deal_id, score')
     .in('deal_id', dealIds)
 
+  const rows = (data ?? []) as Array<{ deal_id: string; score: number }>
   const map = new Map<string, { sum: number; count: number }>()
-  for (const r of data ?? []) {
+  for (const r of rows) {
     const prev = map.get(r.deal_id) ?? { sum: 0, count: 0 }
     map.set(r.deal_id, { sum: prev.sum + r.score, count: prev.count + 1 })
   }
@@ -58,7 +60,7 @@ async function getDeals(category?: string, search?: string): Promise<DealRow[]> 
 
   const { data, error } = await query
   if (error) {
-    console.error('Deals fetch error:', error.message)
+    logger.error('Deals fetch error', new Error(error.message))
     return []
   }
   return (data ?? []) as DealRow[]

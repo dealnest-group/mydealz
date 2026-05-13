@@ -1,3 +1,14 @@
+// @ts-check
+
+// Lazily load @sentry/nextjs — skip if not installed yet so Vercel build
+// never breaks while the dependency is being added to the lockfile.
+let withSentryConfig = (cfg, _opts) => cfg
+try {
+  withSentryConfig = require('@sentry/nextjs').withSentryConfig
+} catch {
+  // Sentry not installed yet — proceed without source map upload.
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@mydealz/ui', '@mydealz/db', '@mydealz/types'],
@@ -14,4 +25,10 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  disableServerWebpackPlugin: process.env.NODE_ENV !== 'production',
+  disableClientWebpackPlugin: process.env.NODE_ENV !== 'production',
+})

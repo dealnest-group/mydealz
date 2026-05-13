@@ -209,7 +209,7 @@ export default async function ProfilePage() {
                         )}
                       </p>
                       {item.kind === 'comment' && (
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">"{item.content}"</p>
+                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">&ldquo;{item.content}&rdquo;</p>
                       )}
                       {item.kind === 'rating' && (
                         <div className="mt-1">
