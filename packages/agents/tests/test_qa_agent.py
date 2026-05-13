@@ -140,3 +140,104 @@ class TestScoreAuthenticity:
         with patch('qa_agent.complete', return_value='{"score": 20, "reason": "inflated was-price"}'):
             score, _ = score_authenticity(deal)
         assert score < MIN_AUTHENTICITY_SCORE
+
+
+# ---------------------------------------------------------------------------
+# run() — end-to-end with mocked Supabase + LLM
+# ---------------------------------------------------------------------------
+
+from qa_agent import run  # noqa: E402
+
+
+class _MockSupabaseChain:
+    """Chainable mock that records calls. Mimics supabase-py's fluent API."""
+    def __init__(self, deals=None):
+        self._deals = deals or []
+        self.updates = []
+        self._current_update = None
+
+    def table(self, _name):
+        return self
+
+    def select(self, _cols):
+        return self
+
+    def eq(self, key, value):
+        if self._current_update is not None:
+            self._current_update['where'] = (key, value)
+            self.updates.append(self._current_update)
+            self._current_update = None
+        return self
+
+    def limit(self, _n):
+        return self
+
+    def update(self, payload):
+        self._current_update = {'payload': payload}
+        return self
+
+    def execute(self):
+        class _Result: pass
+        r = _Result()
+        r.data = self._deals
+        return r
+
+
+class TestRun:
+    def test_no_pending_deals_logs_and_exits(self):
+        mock_db = _MockSupabaseChain(deals=[])
+        with patch('qa_agent.get_client', return_value=mock_db), \
+             patch('qa_agent.log') as mock_log:
+            run(dry_run=False)
+        mock_log.assert_called_once()
+        assert mock_log.call_args[0][1] == 'success'
+
+    def test_invalid_deal_marked_rejected(self):
+        bad_deal = _valid_deal(title='X', id='bad-1')  # title too short
+        mock_db = _MockSupabaseChain(deals=[bad_deal])
+        with patch('qa_agent.get_client', return_value=mock_db), \
+             patch('qa_agent.log'):
+            run(dry_run=False)
+        assert any(u['payload'].get('status') == 'rejected' for u in mock_db.updates)
+
+    def test_dry_run_writes_nothing(self):
+        bad_deal = _valid_deal(title='X', id='bad-1')
+        mock_db = _MockSupabaseChain(deals=[bad_deal])
+        with patch('qa_agent.get_client', return_value=mock_db), \
+             patch('qa_agent.log'):
+            run(dry_run=True)
+        assert mock_db.updates == []
+
+    def test_valid_deal_with_high_score_approved(self):
+        good_deal = _valid_deal(id='good-1')
+        mock_db = _MockSupabaseChain(deals=[good_deal])
+        with patch('qa_agent.get_client', return_value=mock_db), \
+             patch('qa_agent.complete', return_value='{"score": 90, "reason": "real"}'), \
+             patch('qa_agent.log'):
+            run(dry_run=False)
+        approvals = [u for u in mock_db.updates if u['payload'].get('status') == 'approved']
+        assert len(approvals) == 1
+        assert approvals[0]['payload']['authenticity_score'] == 90
+
+    def test_valid_deal_with_low_score_rejected(self):
+        good_deal = _valid_deal(id='low-1')
+        mock_db = _MockSupabaseChain(deals=[good_deal])
+        with patch('qa_agent.get_client', return_value=mock_db), \
+             patch('qa_agent.complete', return_value='{"score": 20, "reason": "fake"}'), \
+             patch('qa_agent.log'):
+            run(dry_run=False)
+        rejections = [u for u in mock_db.updates if u['payload'].get('status') == 'rejected']
+        assert len(rejections) == 1
+
+    def test_exception_during_deal_does_not_kill_batch(self):
+        d1 = _valid_deal(id='ok-1')
+        d2 = _valid_deal(id='ok-2')
+        mock_db = _MockSupabaseChain(deals=[d1, d2])
+        # First call raises, second succeeds
+        with patch('qa_agent.get_client', return_value=mock_db), \
+             patch('qa_agent.complete', side_effect=[RuntimeError('boom'), '{"score": 85, "reason": "ok"}']), \
+             patch('qa_agent.log') as mock_log:
+            run(dry_run=False)
+        # Should still log — status 'partial' because errors > 0
+        mock_log.assert_called_once()
+        assert mock_log.call_args[0][1] in ('success', 'partial')

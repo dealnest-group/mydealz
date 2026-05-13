@@ -61,6 +61,7 @@ jobs:
         run: |
           pytest tests/ \
             --cov=qa_agent \
-            --cov-fail-under=60 \
+            --cov-fail-under=80 \
+            --cov-report=term-missing \
             --cov-report=xml:coverage-python.xml \
             -v

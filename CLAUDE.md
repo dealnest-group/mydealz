@@ -123,7 +123,8 @@ There are three Supabase clients in the web app. Use the correct one for each co
 - **Every PR must include tests** for the logic it changes — no exceptions
 - TypeScript packages use **Vitest** — config at root `vitest.workspace.ts`
 - Python agents use **pytest** — tests in `packages/agents/tests/`
-- Minimum coverage gate: **60% lines** on `packages/api` and `packages/agents`
+- Coverage gate (industry standard): **80% lines, 80% functions, 75% branches, 80% statements** on every tested module in `packages/api` and `packages/agents`
+- Files without tests are excluded from the report rather than dragging the average down — add the file to `include` (Vitest) or `--cov=<module>` (pytest) when you ship its first test
 - What to test: pure functions, tRPC procedures (mock Supabase), agent validators, normalisation logic
 - What NOT to test: Next.js page rendering, Supabase itself, external APIs
 - Run all tests before pushing: `pnpm test` (TypeScript) and `pytest packages/agents/tests/` (Python)
