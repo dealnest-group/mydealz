@@ -64,6 +64,35 @@ describe('deals.list', () => {
     )
   })
 
+  it('escapes LIKE wildcards in search input', async () => {
+    const ctx = makeContext({ range: vi.fn().mockResolvedValue({ data: [], error: null }) })
+    // A user search of `100%_off` should not be treated as a LIKE pattern —
+    // `%` and `_` get backslash-escaped so they match literally.
+    await caller(ctx).deals.list({ search: '100%_off' })
+    expect(ctx.supabase.from('deals')._chain.ilike).toHaveBeenCalledWith(
+      'title',
+      '%100\\%\\_off%',
+    )
+  })
+
+  it('escapes LIKE wildcards in category input', async () => {
+    const ctx = makeContext({ range: vi.fn().mockResolvedValue({ data: [], error: null }) })
+    await caller(ctx).deals.list({ category: '50%' })
+    expect(ctx.supabase.from('deals')._chain.ilike).toHaveBeenCalledWith(
+      'category',
+      '%50\\%%',
+    )
+  })
+
+  it('escapes backslashes in input', async () => {
+    const ctx = makeContext({ range: vi.fn().mockResolvedValue({ data: [], error: null }) })
+    await caller(ctx).deals.list({ search: 'a\\b' })
+    expect(ctx.supabase.from('deals')._chain.ilike).toHaveBeenCalledWith(
+      'title',
+      '%a\\\\b%',
+    )
+  })
+
   it('returns empty array when no deals found', async () => {
     const ctx = makeContext({ range: vi.fn().mockResolvedValue({ data: null, error: null }) })
     const result = await caller(ctx).deals.list({})

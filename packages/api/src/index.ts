@@ -32,6 +32,22 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 })
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Escape PostgREST `ilike` wildcards (`%`, `_`, `\`) so a user-supplied
+ * search string is treated as a literal substring, not a LIKE pattern.
+ *
+ * This isn't about SQL injection — Supabase parameterises the value — but
+ * about preventing wildcard injection. Without escaping, a search for `%`
+ * would match every row, and `_` would match any single character.
+ */
+function escapeLikePattern(input: string): string {
+  return input.replace(/[\\%_]/g, '\\$&')
+}
+
+// ---------------------------------------------------------------------------
 // Deals router
 // ---------------------------------------------------------------------------
 
@@ -59,10 +75,10 @@ const dealsRouter = router({
         .range(input.offset, input.offset + input.limit - 1)
 
       if (input.category) {
-        query = query.ilike('category', `%${input.category}%`)
+        query = query.ilike('category', `%${escapeLikePattern(input.category)}%`)
       }
       if (input.search) {
-        query = query.ilike('title', `%${input.search}%`)
+        query = query.ilike('title', `%${escapeLikePattern(input.search)}%`)
       }
 
       const { data, error } = await query
